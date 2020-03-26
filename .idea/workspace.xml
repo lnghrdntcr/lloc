@@ -2,16 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f11cb04c-80bb-4b7e-b6c1-ac0a97d70d3c" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/llcc.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/crop_faces.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/format_dataset.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Readme.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/llcc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/format_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/format_dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -126,7 +123,9 @@
       <workItem from="1583365765112" duration="2508000" />
       <workItem from="1584727884901" duration="719000" />
       <workItem from="1585070941344" duration="18238000" />
-      <workItem from="1585169755241" duration="13993000" />
+      <workItem from="1585169755241" duration="14335000" />
+      <workItem from="1585195822071" duration="6011000" />
+      <workItem from="1585250911718" duration="947000" />
     </task>
     <servers />
   </component>
@@ -138,26 +137,30 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="414" y="154" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1585176612570" />
+    <state x="728" y="229" width="450" height="546" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1585251638201">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="728" y="229" width="450" height="546" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1585251638201" />
     <state x="676" y="249" key="FileChooserDialogImpl" timestamp="1583446139973">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="676" y="249" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1583446139973" />
-    <state width="1872" height="296" key="GridCell.Tab.0.bottom" timestamp="1585183732065">
+    <state width="1848" height="224" key="GridCell.Tab.0.bottom" timestamp="1585251831034">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1872" height="296" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1585183732065" />
-    <state width="1872" height="296" key="GridCell.Tab.0.center" timestamp="1585183732063">
+    <state width="1848" height="224" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831034" />
+    <state width="1848" height="224" key="GridCell.Tab.0.center" timestamp="1585251831033">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1872" height="296" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1585183732063" />
-    <state width="1872" height="296" key="GridCell.Tab.0.left" timestamp="1585183732061">
+    <state width="1848" height="224" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831033" />
+    <state width="1848" height="224" key="GridCell.Tab.0.left" timestamp="1585251831033">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1872" height="296" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1585183732061" />
-    <state width="1872" height="296" key="GridCell.Tab.0.right" timestamp="1585183732064">
+    <state width="1848" height="224" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831033" />
+    <state width="1848" height="224" key="GridCell.Tab.0.right" timestamp="1585251831034">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1872" height="296" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1585183732064" />
+    <state width="1848" height="224" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831034" />
     <state width="1848" height="344" key="GridCell.Tab.1.bottom" timestamp="1585181346104">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
@@ -178,29 +181,17 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="463" y="37" key="SettingsEditor/0.0.1920.1080@0.0.1920.1080" timestamp="1585176598897" />
-    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup" timestamp="1585177603735">
+    <state x="437" y="117" width="1035" height="805" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1585251575775">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1585177603735" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>19</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>25</line>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <state x="437" y="117" width="1035" height="805" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1585251575775" />
+    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup" timestamp="1585251625642">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1585251625642" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/llcc$crop_faces.coverage" NAME="crop_faces Coverage Results" MODIFIED="1585078756959" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/llcc$main.coverage" NAME="main Coverage Results" MODIFIED="1585183732021" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/llcc$main.coverage" NAME="main Coverage Results" MODIFIED="1585251831024" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
