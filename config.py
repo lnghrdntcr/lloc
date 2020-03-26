@@ -1,5 +1,5 @@
-EPSILON                = 1 / 3
+EPSILON                = 1 / 9
 MNIST_ROW_SIZE         = 28
 MNIST_COL_SIZE         = 28
-MNIST_SUBSAMPLE_FACTOR = 30
+MNIST_SUBSAMPLE_FACTOR = 100
 SUPPORTED_DATASETS     = ["FEC", "mnist"]

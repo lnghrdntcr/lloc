@@ -19,9 +19,12 @@ def feedback_arc_set(G):
             try:
                 ret.remove_edge(u, v)
                 ret.add_edge(v, u)
-                # cur_cycles = list(nx.simple_cycles(ret))
-                # if not cur_cycles:
-                #     return ret.copy()
+                cur_cycles = list(nx.simple_cycles(ret))
+
+                # Early exit condition, there are no more cycles
+                # so its pointless to continue to remove edges
+                if not cur_cycles:
+                    return ret.copy()
             except nx.exception.NetworkXError:
                 pass
 
@@ -68,7 +71,6 @@ def count_violated_constraints(embedding, constraints):
             else:
                 count += 1
 
-
     return count
 
 
@@ -84,6 +86,18 @@ def build_graph_from_constraints(constraints, cur_vertex):
     G.add_nodes_from(nodes)
     G.add_edges_from(edges)
     return G
+
+
+def patch_representative_map_from_all_constraints(representative_map, all_idxs):
+    ret = representative_map.copy()
+    for constraint in all_idxs:
+        assert len(constraint) == 3
+        for idx in constraint:
+            if not representative_map.get(str(idx)):
+                # Map to bucket 0 every element missing from the map
+                ret[str(idx)] = 0
+
+    return ret
 
 
 def build_representative_embedding(buckets):

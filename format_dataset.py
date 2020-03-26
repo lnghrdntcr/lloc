@@ -69,7 +69,7 @@ def read_x_mnist(x_path, normalize=True):
         n_cols = readInt32(f.read(4))
         x = []
 
-        for i in tqdm(range(n_samples)):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read values"):
             image = []
             for j in range(n_rows * n_cols):
                 image.append(readInt8(f.read(1)))
@@ -90,7 +90,7 @@ def read_y_mnist(y_path):
         n_samples = readInt32(f.read(4))
 
         y = []
-        for i in tqdm(range(n_samples)):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read labels"):
             idx = readInt8(f.read(1))
             y.append([0 for i in range(10)])
             y[i][idx] = 1
@@ -99,22 +99,23 @@ def read_y_mnist(y_path):
 
 
 def read_mnist():
-    # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
-    # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
+    x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
+    y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
     x_test = read_x_mnist("./datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
     y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
-    #     return x_train, y_train, x_test, y_test
-    return x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
+
+    # Note that subsampling is done in this way due to the fact that
+    # labels in the mnist dataset are already distributed more or less
+    # uniformly at random
+    return x_train[0::MNIST_SUBSAMPLE_FACTOR], y_train[0::MNIST_SUBSAMPLE_FACTOR], x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
 
 
-def format_mnist():
-    # x_train, y_train, x_test, y_test = read_mnist()
-    x_test, y_test = read_mnist()
+def fast_format_mnist():
+    x_train, y_train, x_test, y_test = read_mnist()
     new_dataset = []
     idx_map = {}
     # do it on y_test, because is smaller
-    print(f"Dataset size -> {len(y_test)}")
     l1_cache = {}
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Fast Triplet generation O(10*n^2)"):
         label = np.argmax(y)
@@ -139,6 +140,5 @@ def format_mnist():
         else:
             tuples = l1_cache[str(label)]
             new_dataset.extend(tuples)
-
 
     return new_dataset, idx_map, (x_test, y_test)
