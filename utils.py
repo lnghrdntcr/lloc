@@ -3,7 +3,13 @@ from math import factorial
 from os import system, mkdir
 import requests as req
 from PIL import Image
-from config import EPSILON
+from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
+import numpy as np
+
+
+def save_mnist_image(image_array, label, idx):
+    cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
+    cur_image.save(f"./results/mnist/{label}/{idx}.png")
 
 
 def save_results(embeddings, image_cache, crop_map):
@@ -20,7 +26,7 @@ def save_results(embeddings, image_cache, crop_map):
             top_left_row = w * float(tlr)
             bottom_right_row = w * float(brr)
             face = img_file.crop((top_left_col, top_left_row, bottom_right_col, bottom_right_row))
-            face.save(f"./results/{directory}/{image_index}.jpg")
+            face.save(f"./results/FEC/{directory}/{image_index}.jpg")
 
 
 def n_choose_k(n, k):
@@ -31,10 +37,10 @@ def n_choose_k(n, k):
     return num / den
 
 
-def setup_results_directories():
-    system("rm -rf results/*")
+def setup_results_directories(dataset):
+    system(f"rm -rf results/{dataset}/*")
     for i in range(int(1 / EPSILON) + 1):
-        mkdir(f"./results/{i}")
+        mkdir(f"./results/{dataset}/{i}", )
 
 
 def pretty_print_embedding(embedding):

@@ -1,3 +1,5 @@
 venv_pypy
 datasets/*
 results/*
+__pycache__
+.idea

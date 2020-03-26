@@ -40,6 +40,7 @@ def get_buckets(arr, num_buckets):
 
 
 def format_embedding(base, embedding, mapped_to_representatives):
+    # TODO: I should map every image not in the embedding to class 0
     ret = {
         str(base): 0
     }
@@ -66,6 +67,7 @@ def count_violated_constraints(embedding, constraints):
                 count += int(f_s > f_t)
             else:
                 count += 1
+
 
     return count
 

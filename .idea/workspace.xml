@@ -2,13 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f11cb04c-80bb-4b7e-b6c1-ac0a97d70d3c" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Readme.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/llcc.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/format_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/format_dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/llcc.py" beforeDir="false" afterPath="$PROJECT_DIR$/llcc.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,8 +51,16 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/datasets/mnist" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/results/FEC" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/datasets/mnist" />
+    </key>
   </component>
   <component name="RunManager" selected="Python.main">
     <configuration name="crop_faces" type="PythonConfigurationType" factoryName="Python" singleton="false" temporary="true" nameIsGenerated="true">
@@ -69,6 +77,28 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/crop_faces.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="format_dataset" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="llcc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/format_dataset.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -102,10 +132,12 @@
     <list>
       <item itemvalue="Python.crop_faces" />
       <item itemvalue="Python.main" />
+      <item itemvalue="Python.format_dataset" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.format_dataset" />
         <item itemvalue="Python.crop_faces" />
       </list>
     </recent_temporary>
@@ -125,7 +157,7 @@
       <workItem from="1585070941344" duration="18238000" />
       <workItem from="1585169755241" duration="14335000" />
       <workItem from="1585195822071" duration="6011000" />
-      <workItem from="1585250911718" duration="947000" />
+      <workItem from="1585250911718" duration="7678000" />
     </task>
     <servers />
   </component>
@@ -141,26 +173,26 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="728" y="229" width="450" height="546" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1585251638201" />
-    <state x="676" y="249" key="FileChooserDialogImpl" timestamp="1583446139973">
+    <state x="674" y="231" key="FileChooserDialogImpl" timestamp="1585259043053">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state x="676" y="249" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1583446139973" />
-    <state width="1848" height="224" key="GridCell.Tab.0.bottom" timestamp="1585251831034">
+    <state x="674" y="231" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1585259043053" />
+    <state width="1848" height="224" key="GridCell.Tab.0.bottom" timestamp="1585264695847">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1848" height="224" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831034" />
-    <state width="1848" height="224" key="GridCell.Tab.0.center" timestamp="1585251831033">
+    <state width="1848" height="224" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1585264695847" />
+    <state width="1848" height="224" key="GridCell.Tab.0.center" timestamp="1585264695846">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1848" height="224" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831033" />
-    <state width="1848" height="224" key="GridCell.Tab.0.left" timestamp="1585251831033">
+    <state width="1848" height="224" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1585264695846" />
+    <state width="1848" height="224" key="GridCell.Tab.0.left" timestamp="1585264695846">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1848" height="224" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831033" />
-    <state width="1848" height="224" key="GridCell.Tab.0.right" timestamp="1585251831034">
+    <state width="1848" height="224" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1585264695846" />
+    <state width="1848" height="224" key="GridCell.Tab.0.right" timestamp="1585264695846">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1848" height="224" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1585251831034" />
+    <state width="1848" height="224" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1585264695846" />
     <state width="1848" height="344" key="GridCell.Tab.1.bottom" timestamp="1585181346104">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
@@ -185,13 +217,18 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="437" y="117" width="1035" height="805" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1585251575775" />
-    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup" timestamp="1585251625642">
+    <state x="582" y="254" width="755" height="578" key="find.popup" timestamp="1585261749361">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1585251625642" />
+    <state x="582" y="254" width="755" height="578" key="find.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1585261749361" />
+    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup" timestamp="1585264600714">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="617" y="253" width="719" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1585264600714" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/llcc$format_dataset.coverage" NAME="format_dataset Coverage Results" MODIFIED="1585261105863" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/llcc$crop_faces.coverage" NAME="crop_faces Coverage Results" MODIFIED="1585078756959" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/llcc$main.coverage" NAME="main Coverage Results" MODIFIED="1585251831024" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/llcc$main.coverage" NAME="main Coverage Results" MODIFIED="1585264695835" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
