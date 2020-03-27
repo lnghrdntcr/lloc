@@ -1,5 +1,5 @@
-venv_pypy
+venv_pypy/
 datasets/*
 results/*
-__pycache__
-.idea
+__pycache__/
+.idea/

@@ -3,7 +3,7 @@ from IPython import embed
 from multiprocessing import Pool
 import multiprocessing
 from llcc import llcc
-from utils import n_choose_k, setup_results_directories, save_mnist_image, split_dataset
+from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments
 
 from config import SUPPORTED_DATASETS
 
@@ -24,10 +24,7 @@ if __name__ == "__main__":
     idx_constraints, reverse_cache, (x, y) = fast_format_mnist()
     num_points = len(reverse_cache)
 
-    process_pool_arguments = split_dataset(idx_constraints, num_points, multiprocessing.cpu_count())
-
-
-    #best_embedding, best_violated_constraints = llcc(num_points, idx_constraints, all_dataset, thread_id)
+    process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count())
 
     responses = process_pool.starmap(llcc, process_pool_arguments)
 

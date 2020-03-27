@@ -118,12 +118,9 @@ def fast_format_mnist():
     new_dataset = []
     idx_map = {}
     # do it on y_test, because is smaller
-    #l1_cache = {}
-    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Fast Triplet generation O(10*n^2)"):
+    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation O(n^3)"):
         label = np.argmax(y)
         # if cache miss
-        #if not l1_cache.get(str(label)):
-        l1_cache_builder = []
         for idx2, y_2 in enumerate(y_test):
             label2 = np.argmax(y_2)
             if label2 > label:
@@ -132,15 +129,8 @@ def fast_format_mnist():
                     if label3 > label2:
                         # I finally have a triplet!
                         new_dataset.append([idx, idx2, idx3])
-                        l1_cache_builder.append([idx, idx2, idx3])
                         idx_map[str(idx)] = label
                         idx_map[str(idx2)] = label2
                         idx_map[str(idx3)] = label3
-
-        #l1_cache[str(label)] = l1_cache_builder
-    # If cache hit, save the tuples!
-    #     else:
-    #         tuples = l1_cache[str(label)]
-    #         new_dataset.extend(tuples)
 
     return new_dataset, idx_map, (x_test, y_test)

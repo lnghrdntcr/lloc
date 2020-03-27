@@ -46,7 +46,6 @@ def get_buckets(arr, num_buckets):
 
 
 def format_embedding(base, embedding, mapped_to_representatives):
-    # TODO: I should map every image not in the embedding to class 0
     ret = {
         str(base): 0
     }
@@ -62,7 +61,6 @@ def format_embedding(base, embedding, mapped_to_representatives):
 
 def count_violated_constraints(embedding, constraints):
     count = 0
-
     for constraint in constraints:
         unrolled_constraints = combinations(constraint, 2)
         for unrolled_constraint in unrolled_constraints:
@@ -120,7 +118,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
 
     best_embedding = {}
     best_violated_constraints = float("inf")
-    for i in tqdm(range(num_points), position=process_id*2, leave=False, desc=f"[Process {process_id}]Points    "):
+    for i in tqdm(range(num_points), position=process_id*2, leave=False, desc=f"[Core {process_id}] Points    "):
         # find constraints where p_i is the first
         point_id = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
@@ -149,7 +147,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         # Perform exhaustive enumeration among all representatives
         all_embeddings = permutations(representatives, len(representatives))
 
-        for raw_embedding in tqdm(list(all_embeddings), position=process_id*2+1, leave=False, desc="Embeddings"):
+        for raw_embedding in tqdm(list(all_embeddings), position=process_id*2+1, leave=False, desc=f"[Core {process_id}] Embeddings"):
             embedding = format_embedding(point_id, raw_embedding, representatives_map)
             n_violated_constraints = count_violated_constraints(embedding, all_dataset)
 
