@@ -99,8 +99,8 @@ def read_y_mnist(y_path):
 
 
 def read_mnist():
-    x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
-    y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
+    # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
+    # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
     x_test = read_x_mnist("./datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
     y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
@@ -108,37 +108,39 @@ def read_mnist():
     # Note that subsampling is done in this way due to the fact that
     # labels in the mnist dataset are already distributed more or less
     # uniformly at random
-    return x_train[0::MNIST_SUBSAMPLE_FACTOR], y_train[0::MNIST_SUBSAMPLE_FACTOR], x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
+    #     return x_train[0::MNIST_SUBSAMPLE_FACTOR], y_train[0::MNIST_SUBSAMPLE_FACTOR], x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
+    return x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
 
 
 def fast_format_mnist():
-    x_train, y_train, x_test, y_test = read_mnist()
+    # FIXME: fast version doesn't works
+    x_test, y_test = read_mnist()
     new_dataset = []
     idx_map = {}
     # do it on y_test, because is smaller
-    l1_cache = {}
+    #l1_cache = {}
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Fast Triplet generation O(10*n^2)"):
         label = np.argmax(y)
         # if cache miss
-        if not l1_cache.get(str(label)):
-            l1_cache_builder = []
-            for idx2, y_2 in enumerate(y_test):
-                label2 = np.argmax(y_2)
-                if label2 > label:
-                    for idx3, y_3 in enumerate(y_test):
-                        label3 = np.argmax(y_3)
-                        if label3 > label2:
-                            # I finally have a triplet!
-                            new_dataset.append([idx, idx2, idx3])
-                            l1_cache_builder.append([idx, idx2, idx3])
-                            idx_map[str(idx)] = label
-                            idx_map[str(idx2)] = label2
-                            idx_map[str(idx3)] = label3
+        #if not l1_cache.get(str(label)):
+        l1_cache_builder = []
+        for idx2, y_2 in enumerate(y_test):
+            label2 = np.argmax(y_2)
+            if label2 > label:
+                for idx3, y_3 in enumerate(y_test):
+                    label3 = np.argmax(y_3)
+                    if label3 > label2:
+                        # I finally have a triplet!
+                        new_dataset.append([idx, idx2, idx3])
+                        l1_cache_builder.append([idx, idx2, idx3])
+                        idx_map[str(idx)] = label
+                        idx_map[str(idx2)] = label2
+                        idx_map[str(idx3)] = label3
 
-            l1_cache[str(label)] = l1_cache_builder
-        # If cache hit, save the tuples!
-        else:
-            tuples = l1_cache[str(label)]
-            new_dataset.extend(tuples)
+        #l1_cache[str(label)] = l1_cache_builder
+    # If cache hit, save the tuples!
+    #     else:
+    #         tuples = l1_cache[str(label)]
+    #         new_dataset.extend(tuples)
 
     return new_dataset, idx_map, (x_test, y_test)

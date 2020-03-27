@@ -5,6 +5,23 @@ import requests as req
 from PIL import Image
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
 import numpy as np
+from math import floor
+
+
+def split_dataset(points, num_points, cpu_count):
+    chunk_size = floor(num_points / cpu_count)
+    new_points_ds = []
+    arguments = []
+    for i in range(cpu_count - 1):
+        projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
+        dp = list(projected_datapoints)
+        arguments.append((dp, chunk_size, points, i))
+    # Last points are handled separately
+    dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
+
+    arguments.append(((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1)))
+
+    return arguments
 
 
 def save_mnist_image(image_array, label, idx):

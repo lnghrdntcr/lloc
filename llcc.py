@@ -1,6 +1,9 @@
 import random
-from itertools import combinations
+from itertools import combinations, permutations
 import networkx as nx
+from tqdm import tqdm
+
+from config import EPSILON
 
 
 def feedback_arc_set(G):
@@ -111,3 +114,47 @@ def build_representative_embedding(buckets):
             if el != representatives[idx]:
                 representatives_map[str(el)] = idx + 1
     return representatives, representatives_map
+
+
+def llcc(idx_constraints, num_points, all_dataset, process_id):
+
+    best_embedding = {}
+    best_violated_constraints = float("inf")
+    for i in tqdm(range(num_points), position=process_id*2, leave=False, desc=f"[Process {process_id}]Points    "):
+        # find constraints where p_i is the first
+        point_id = i + process_id * num_points
+        constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
+
+        G = build_graph_from_constraints(constraints, point_id)
+
+        reoriented = feedback_arc_set(G)
+
+        try:
+            topological_ordered_nodes = list(nx.topological_sort(reoriented))
+        except nx.exception.NetworkXUnfeasible:
+            # Skip iteration if a topological ordering cannot be built
+            continue
+
+        num_buckets = int(1 / EPSILON)
+        buckets = get_buckets(topological_ordered_nodes, num_buckets)
+
+        if not buckets[0]:
+            # Skip iteration if the point had no constraints to begin with
+            continue
+
+        representatives, representatives_map = build_representative_embedding(buckets)
+
+        representatives_map = patch_representative_map_from_all_constraints(representatives_map, all_dataset)
+
+        # Perform exhaustive enumeration among all representatives
+        all_embeddings = permutations(representatives, len(representatives))
+
+        for raw_embedding in tqdm(list(all_embeddings), position=process_id*2+1, leave=False, desc="Embeddings"):
+            embedding = format_embedding(point_id, raw_embedding, representatives_map)
+            n_violated_constraints = count_violated_constraints(embedding, all_dataset)
+
+            if n_violated_constraints < best_violated_constraints:
+                best_embedding = embedding
+                best_violated_constraints = n_violated_constraints
+
+    return best_embedding, best_violated_constraints
