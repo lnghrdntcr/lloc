@@ -1,9 +1,9 @@
-from format_dataset import fast_format_mnist
+from format_dataset import fast_format_mnist, format_google_ds
 from IPython import embed
 from multiprocessing import Pool
 import multiprocessing
 from llcc import llcc
-from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments
+from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments, save_fec_results
 
 from config import SUPPORTED_DATASETS
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         setup_results_directories(ds)
 
     # idx_constraints, reverse_cache, crop_map = format_google_ds(
-    #     "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=300)
+    #      "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=2000)
 
     idx_constraints, reverse_cache, (x, y) = fast_format_mnist()
     num_points = len(reverse_cache)
@@ -33,8 +33,11 @@ if __name__ == "__main__":
             best_embedding = embedding
             best_violated_constraints = n_violated_constraints
 
+    # constraints -> {best_embedding}
     print(
-        f"Best embedding with {best_violated_constraints} errors over {int(n_choose_k(len(idx_constraints), 2))} constraints -> {best_embedding}")
+        f"Best embedding with {best_violated_constraints} errors over {3 * len(idx_constraints)} constraints. Max possible constraints -> {num_points * int(n_choose_k(num_points, 2))} ")
+
+    # save_fec_results(best_embedding, reverse_cache, crop_map)
 
     for key, value in reverse_cache.items():
         try:
@@ -43,5 +46,3 @@ if __name__ == "__main__":
             continue
         index = int(key)
         save_mnist_image(x[index], embedding_key, index)
-
-    embed()

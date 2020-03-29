@@ -7,6 +7,7 @@ from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
 import numpy as np
 from math import floor
 from copy import deepcopy
+from tqdm import tqdm
 
 
 def format_arguments(points, num_points, cpu_count):
@@ -31,8 +32,8 @@ def save_mnist_image(image_array, label, idx):
     cur_image.save(f"./results/mnist/{label}/{idx}.png")
 
 
-def save_results(embeddings, image_cache, crop_map):
-    for image_index, directory in embeddings.items():
+def save_fec_results(embeddings, image_cache, crop_map):
+    for image_index, directory in tqdm(embeddings.items()):
         url = image_cache[image_index]
         response = req.get(url.replace("\"", ""))
         if response.status_code == 200:

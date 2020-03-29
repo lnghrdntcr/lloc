@@ -14,7 +14,7 @@ class TripletType(Enum):
     THREE_CLASS_TRIPLET = "THREE_CLASS_TRIPLET"
 
 
-def format_google_ds(path, early_stop_count=200):
+def format_google_ds(path, early_stop_count=200, smart_constraints=False):
     with open(path) as ds:
         cache = {}
         reverse_cache = {}
@@ -41,8 +41,11 @@ def format_google_ds(path, early_stop_count=200):
                     ]
                     next_idx += 1
 
-            if TripletType.THREE_CLASS_TRIPLET in row_split:
-                new_ds.append([cache[label] for label in reversed(images)])
+            if smart_constraints:
+                if TripletType.THREE_CLASS_TRIPLET in row_split:
+                    new_ds.append([cache[label] for label in reversed(images)])
+                else:
+                    new_ds.append([cache[label] for label in images])
             else:
                 new_ds.append([cache[label] for label in images])
 
@@ -113,7 +116,7 @@ def read_mnist():
 
 
 def fast_format_mnist():
-    # FIXME: fast version doesn't works
+    # FIXME: fast version doesn't work
     x_test, y_test = read_mnist()
     new_dataset = []
     idx_map = {}
