@@ -115,7 +115,7 @@ def read_mnist():
     return x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
 
 
-def fast_format_mnist():
+def format_mnist_from_labels():
     # FIXME: fast version doesn't work
     x_test, y_test = read_mnist()
     new_dataset = []
