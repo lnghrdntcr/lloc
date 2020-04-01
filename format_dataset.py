@@ -4,7 +4,7 @@ from struct import unpack
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
-from config import MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR
+from config import MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF
 from IPython import embed
 
 
@@ -30,7 +30,8 @@ def format_google_ds(path, early_stop_count=200, smart_constraints=False):
             images = [str(row_split[0]), str(row_split[5]), str(row_split[10])]
 
             for base, image in enumerate(images):
-                if (index := cache.get(image)) is None:
+                index = cache.get(image)
+                if index is None:
                     cache[image] = next_idx
                     reverse_cache[str(next_idx)] = image
                     crop_map[str(next_idx)] = [
@@ -121,7 +122,7 @@ def format_mnist_from_labels():
     new_dataset = []
     idx_map = {}
     # do it on y_test, because is smaller
-    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation O(n^3)"):
+    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
         label = np.argmax(y)
         # if cache miss
         for idx2, y_2 in enumerate(y_test):
@@ -135,5 +136,24 @@ def format_mnist_from_labels():
                         idx_map[str(idx)] = label
                         idx_map[str(idx2)] = label2
                         idx_map[str(idx3)] = label3
+
+    return new_dataset, idx_map, (x_test, y_test)
+
+def format_mnist_from_correlations():
+    x_test, y_test = read_mnist()
+    new_dataset = []
+    idx_map = {}
+    correlations = np.corrcoef(x_test.reshape((x_test.shape[0], x_test.shape[1])))
+    for idx, row in tqdm(enumerate(correlations), desc="[MNIST] Triplet generation from correlations -> O(n^3)"):
+        treshold_value = MNIST_MIN_CORR_COEFF
+        for idx2, el in enumerate(row):
+            if el >= treshold_value:
+                pivot_row = correlations[idx2]
+                for idx3, third in enumerate(pivot_row):
+                    if third >= treshold_value and (idx != idx2 and idx != idx3 and idx2 != idx3):
+                        new_dataset.append([idx, idx2, idx3])
+                        idx_map[str(idx)] = np.argmax(y_test[idx])
+                        idx_map[str(idx2)] = np.argmax(y_test[idx2])
+                        idx_map[str(idx3)] = np.argmax(y_test[idx3])
 
     return new_dataset, idx_map, (x_test, y_test)

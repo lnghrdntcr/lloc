@@ -66,8 +66,9 @@ def count_violated_constraints(embedding, constraints):
         for unrolled_constraint in unrolled_constraints:
             assert len(unrolled_constraint) == 2
             s, t = unrolled_constraint
-
-            if (f_s := embedding.get(str(s))) and (f_t := embedding.get(str(t))):
+            f_s = embedding.get(str(s))
+            f_t = embedding.get(str(t))
+            if (f_s is not None) and (f_t is not None):
                 count += int(f_s > f_t)
             else:
                 count += 1

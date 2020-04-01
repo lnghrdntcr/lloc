@@ -27,9 +27,13 @@ def format_arguments(points, num_points, cpu_count):
     return arguments
 
 
-def save_mnist_image(image_array, label, idx):
+def save_mnist_image(image_array, label, idx, correlation=False):
     cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
-    cur_image.save(f"./results/mnist/{label}/{idx}.png")
+    if correlation:
+        cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
+    else:
+        cur_image.save(f"./results/mnist/{label}/{idx}.png")
+
 
 
 def save_fec_results(embeddings, image_cache, crop_map):
