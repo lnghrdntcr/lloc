@@ -22,7 +22,7 @@ if __name__ == "__main__":
     #      "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=2000)
 
     # format_mnist_from_correlations()
-    idx_constraints, reverse_cache, (x, y) = format_mnist_from_correlations()
+    idx_constraints, reverse_cache, (x, y) = format_mnist_from_labels()
     num_points = len(reverse_cache)
 
     process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count())

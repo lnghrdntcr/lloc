@@ -157,3 +157,60 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
                 best_violated_constraints = n_violated_constraints
 
     return best_embedding, best_violated_constraints
+
+
+def graph_count_violated_constraints(embedding, graph):
+    errors = 0
+    for u, v in combinations(graph.nodes, 2):
+        if graph.has_edge(u, v):
+            f_s = embedding.get(str(u))
+            f_t = embedding.get(str(v))
+
+            if f_s is None or f_t is None:
+                errors += 1
+            else:
+                errors
+    pass
+
+
+def graph_llcc(graph: nx.DiGraph, process_id=0):
+    best_embedding = {}
+    best_violated_constraints = float("inf")
+    nodes = graph.nodes
+
+    for node in nodes:
+        temp_graph = graph.copy()
+        temp_graph.remove_node(node)
+
+        reoriented = feedback_arc_set(temp_graph)
+
+        try:
+            topological_ordered_nodes = list(nx.topological_sort(reoriented))
+        except nx.exception.NetworkXUnfeasible:
+            # Skip iteration if a topological ordering cannot be built
+            continue
+
+        num_buckets = int(1 / EPSILON)
+        buckets = get_buckets(topological_ordered_nodes, num_buckets)
+
+        if not buckets[0]:
+            # Skip iteration if the point had no constraints to begin with
+            continue
+
+        representatives, representatives_map = build_representative_embedding(buckets)
+
+        representatives_map = patch_representative_map_from_all_constraints(representatives_map, all_dataset)
+
+        # Perform exhaustive enumeration among all representatives
+        all_embeddings = permutations(representatives, len(representatives))
+
+        for raw_embedding in tqdm(list(all_embeddings), position=process_id * 2 + 1, leave=False,
+                                  desc=f"[Core {process_id}] Embeddings"):
+            embedding = format_embedding(node, raw_embedding, representatives_map)
+            n_violated_constraints = graph_count_violated_constraints(embedding, graph)
+
+            if n_violated_constraints < best_violated_constraints:
+                best_embedding = embedding
+                best_violated_constraints = n_violated_constraints
+
+    return best_embedding, best_violated_constraints
