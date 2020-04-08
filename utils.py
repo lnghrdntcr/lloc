@@ -8,6 +8,8 @@ import numpy as np
 from math import floor
 from copy import deepcopy
 from tqdm import tqdm
+import networkx as nx
+import json
 
 
 def format_arguments(points, num_points, cpu_count):
@@ -27,13 +29,25 @@ def format_arguments(points, num_points, cpu_count):
     return arguments
 
 
+def graph_format_arguments(graph, cpu_count):
+    print("Formatting arguments...", end="")
+    chunk_size = floor(len(graph.nodes) / cpu_count)
+    arguments = []
+    nodes = list(graph.nodes)
+    for i in range(cpu_count - 1):
+        arguments.append((deepcopy(nodes[i * chunk_size: (i + 1) * chunk_size]), deepcopy(graph), i))
+
+    arguments.append((deepcopy(nodes[(cpu_count - 1) * chunk_size:]), deepcopy(graph), cpu_count - 1))
+    print("done!")
+    return arguments
+
+
 def save_mnist_image(image_array, label, idx, correlation=False):
     cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
     if correlation:
         cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
     else:
         cur_image.save(f"./results/mnist/{label}/{idx}.png")
-
 
 
 def save_fec_results(embeddings, image_cache, crop_map):
@@ -70,3 +84,16 @@ def setup_results_directories(dataset):
 def pretty_print_embedding(embedding):
     pretty_print = ", ".join([f"{el} -> {idx + 1}" for idx, el in enumerate(embedding)])
     print(f"Current embedding into R^1 = [{i} -> 0, {pretty_print}]")
+
+
+def load_graph(path):
+    return nx.read_edgelist(path, create_using=nx.DiGraph)
+
+
+def save_embedding(embedding):
+    print("Saving...", end="")
+    embedding_string = json.dumps(embedding)
+    with open("./results/graphs/facebook.json", "w+") as savefile:
+        savefile.write(embedding_string)
+
+    print("done!")

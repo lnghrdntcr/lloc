@@ -76,6 +76,20 @@ def count_violated_constraints(embedding, constraints):
     return count
 
 
+def graph_count_violated_constraints(embedding, graph: nx.DiGraph):
+    errors = 0
+    for u, v in graph.edges:
+        f_u = embedding.get(str(u))
+        f_v = embedding.get(str(v))
+
+        if (f_u is not None) and (f_v is not None):
+            errors += int(f_u > f_v)
+        else:
+            errors += 1
+
+    return errors
+
+
 def build_graph_from_constraints(constraints, cur_vertex):
     """
     Builds the tournament from the given constraints
@@ -102,6 +116,14 @@ def patch_representative_map_from_all_constraints(representative_map, all_idxs):
     return ret
 
 
+def graph_patch_representative_map_from_all_constraints(representative_map, graph):
+    ret = representative_map.copy()
+    for node in graph.nodes:
+        if not representative_map.get(str(node)):
+            ret[str(node)] = 0
+    return ret
+
+
 def build_representative_embedding(buckets):
     representatives = []
     representatives_map = {}
@@ -116,7 +138,9 @@ def build_representative_embedding(buckets):
 
 
 def llcc(idx_constraints, num_points, all_dataset, process_id):
-
+    """
+    Learns a line from the given constraints
+    """
     best_embedding = {}
     best_violated_constraints = float("inf")
     for i in tqdm(range(num_points), position=process_id*2, leave=False, desc=f"[Core {process_id}] Points    "):
@@ -125,7 +149,6 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
 
         G = build_graph_from_constraints(constraints, point_id)
-
         reoriented = feedback_arc_set(G)
 
         try:
@@ -159,26 +182,11 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
     return best_embedding, best_violated_constraints
 
 
-def graph_count_violated_constraints(embedding, graph):
-    errors = 0
-    for u, v in combinations(graph.nodes, 2):
-        if graph.has_edge(u, v):
-            f_s = embedding.get(str(u))
-            f_t = embedding.get(str(v))
-
-            if f_s is None or f_t is None:
-                errors += 1
-            else:
-                errors
-    pass
-
-
-def graph_llcc(graph: nx.DiGraph, process_id=0):
+def graph_llcc(nodes, graph: nx.DiGraph, process_id):
     best_embedding = {}
     best_violated_constraints = float("inf")
-    nodes = graph.nodes
 
-    for node in nodes:
+    for node in tqdm(nodes, position=process_id*2, leave=False, desc=f"[Core {process_id}] Points    "):
         temp_graph = graph.copy()
         temp_graph.remove_node(node)
 
@@ -199,13 +207,12 @@ def graph_llcc(graph: nx.DiGraph, process_id=0):
 
         representatives, representatives_map = build_representative_embedding(buckets)
 
-        representatives_map = patch_representative_map_from_all_constraints(representatives_map, all_dataset)
+        representatives_map = graph_patch_representative_map_from_all_constraints(representatives_map, graph)
 
         # Perform exhaustive enumeration among all representatives
         all_embeddings = permutations(representatives, len(representatives))
 
-        for raw_embedding in tqdm(list(all_embeddings), position=process_id * 2 + 1, leave=False,
-                                  desc=f"[Core {process_id}] Embeddings"):
+        for raw_embedding in tqdm(list(all_embeddings), position=process_id*2+1, leave=False, desc=f"[Core {process_id}] Embeddings"):
             embedding = format_embedding(node, raw_embedding, representatives_map)
             n_violated_constraints = graph_count_violated_constraints(embedding, graph)
 
