@@ -4,12 +4,20 @@ from utils import load_graph, graph_format_arguments, save_embedding
 from llcc import graph_llcc
 from multiprocessing import Pool
 import multiprocessing
+from config import GRAPH_MOCK, EPSILON, GRAPH_NUM_NODES
+import networkx as nx
+from IPython import embed
 
 best_embedding = {}
 best_violated_constraints = float("inf")
 
 if __name__ == "__main__":
-    graph = load_graph("./datasets/graphs/facebook_combined.txt")
+    if GRAPH_MOCK:
+        graph = nx.to_directed(nx.newman_watts_strogatz_graph(GRAPH_NUM_NODES, 7, 0.1))
+        pagerank = [key for key, _ in sorted(nx.pagerank(graph).items(), key=lambda x: x[1])]
+        top = pagerank[0:int(GRAPH_NUM_NODES / (1 + 1 / EPSILON))]
+    else:
+        graph = load_graph("./datasets/graphs/facebook_combined.txt")
 
     cpu_count = multiprocessing.cpu_count()
     process_pool = Pool(cpu_count)
@@ -26,4 +34,7 @@ if __name__ == "__main__":
         f"Best embedding with {best_violated_constraints} errors over {len(graph.edges)} constraints. Max possible constraints -> {len(graph.nodes) ** 2 / 2} ")
 
     save_embedding(embedding)
-    print("Done!")
+
+    process_pool.close()
+    print("DONE! Exiting...")
+    exit(0)

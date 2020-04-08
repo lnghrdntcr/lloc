@@ -93,7 +93,7 @@ def load_graph(path):
 def save_embedding(embedding):
     print("Saving...", end="")
     embedding_string = json.dumps(embedding)
-    with open("./results/graphs/facebook.json", "w+") as savefile:
+    with open(f"./results/graphs/facebook-{str(int(1 // EPSILON))}.json", "w+") as savefile:
         savefile.write(embedding_string)
 
     print("done!")
