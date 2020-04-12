@@ -6,7 +6,6 @@ from PIL import Image
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
 import numpy as np
 from math import floor
-from copy import deepcopy
 from tqdm import tqdm
 import networkx as nx
 import json
@@ -20,7 +19,7 @@ def format_arguments(points, num_points, cpu_count):
     for i in range(cpu_count - 1):
         projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
         dp = list(projected_datapoints)
-        arguments.append((dp, chunk_size, deepcopy(points), i))
+        arguments.append((dp, chunk_size, points.copy(), i))
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
 
@@ -35,9 +34,9 @@ def graph_format_arguments(graph, cpu_count):
     arguments = []
     nodes = list(graph.nodes)
     for i in range(cpu_count - 1):
-        arguments.append((deepcopy(nodes[i * chunk_size: (i + 1) * chunk_size]), deepcopy(graph), i))
+        arguments.append((nodes[i * chunk_size: (i + 1) * chunk_size].copy(), graph.copy(), i))
 
-    arguments.append((deepcopy(nodes[(cpu_count - 1) * chunk_size:]), deepcopy(graph), cpu_count - 1))
+    arguments.append((nodes[(cpu_count - 1) * chunk_size:].copy(), graph.copy(), cpu_count - 1))
     print("done!")
     return arguments
 
