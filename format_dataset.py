@@ -1,4 +1,5 @@
 from random import random as rand
+from random import randint
 from enum import Enum
 from struct import unpack
 from tqdm import tqdm
@@ -113,7 +114,18 @@ def read_mnist():
     # labels in the mnist dataset are already distributed more or less
     # uniformly at random
     #     return x_train[0::MNIST_SUBSAMPLE_FACTOR], y_train[0::MNIST_SUBSAMPLE_FACTOR], x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
-    return x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
+
+    indices = set()
+    for _ in range(int(len(x_test) / MNIST_SUBSAMPLE_FACTOR)):
+        indices.add(randint(0, len(x_test)))
+
+    new_x_test = []
+    new_y_test = []
+
+    for idx in indices:
+        new_x_test.append(x_test[idx])
+        new_y_test.append(y_test[idx])
+    return new_x_test, new_y_test
 
 
 def format_mnist_from_labels():
@@ -138,6 +150,7 @@ def format_mnist_from_labels():
                         idx_map[str(idx3)] = label3
 
     return new_dataset, idx_map, (x_test, y_test)
+
 
 def format_mnist_from_correlations():
     x_test, y_test = read_mnist()
