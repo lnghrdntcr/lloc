@@ -46,7 +46,7 @@ if __name__ == "__main__":
         except KeyError:
             continue
         index = int(key)
-        save_mnist_image(x[index], embedding_key, index, correlation=True)
+        save_mnist_image(x[index], embedding_key, index)
 
     process_pool.close()
     print("DONE! Exiting...")
