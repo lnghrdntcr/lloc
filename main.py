@@ -2,13 +2,14 @@ from format_dataset import format_mnist_from_labels, format_google_ds, format_mn
 from IPython import embed
 from multiprocessing import Pool
 import multiprocessing
-from llcc import llcc
+from llcc import llcc, pagerank_llcc
 from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments, save_fec_results
 
 from config import SUPPORTED_DATASETS
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
+    USE_PAGERANK = True
     best_embedding = {}
     best_violated_constraints = float("inf")
     cpu_count = multiprocessing.cpu_count()
@@ -27,7 +28,7 @@ if __name__ == "__main__":
 
     process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count())
 
-    responses = process_pool.starmap(llcc, process_pool_arguments)
+    responses = process_pool.starmap(pagerank_llcc, process_pool_arguments)
 
     for embedding, n_violated_constraints in responses:
         if n_violated_constraints < best_violated_constraints:
@@ -39,14 +40,13 @@ if __name__ == "__main__":
         f"Best embedding with {best_violated_constraints} errors over {3 * len(idx_constraints)} constraints. Max possible constraints -> {num_points * int(n_choose_k(num_points, 2))} ")
 
     # save_fec_results(best_embedding, reverse_cache, crop_map)
-
     for key, value in reverse_cache.items():
         try:
             embedding_key = str(best_embedding[str(key)])
         except KeyError:
             continue
         index = int(key)
-        save_mnist_image(x[index], embedding_key, index)
+        save_mnist_image(x[index], embedding_key, index, bucketing=not USE_PAGERANK)
 
     process_pool.close()
     print("DONE! Exiting...")

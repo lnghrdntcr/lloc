@@ -43,12 +43,24 @@ def graph_format_arguments(graph, cpu_count):
     return arguments
 
 
-def save_mnist_image(image_array, label, idx, correlation=False):
+def reverse_edges(G):
+    ret = nx.DiGraph()
+
+    for u, v in G.edges:
+        ret.add_edge(v, u)
+
+    return ret
+
+
+def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True):
     cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
     if correlation:
         cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
-    else:
+
+    if bucketing:
         cur_image.save(f"./results/mnist/{label}/{idx}.png")
+    else:
+        cur_image.save(f"./results/mnist/pagerank/{label}.png")
 
 
 def save_fec_results(embeddings, image_cache, crop_map):
@@ -78,13 +90,17 @@ def n_choose_k(n, k):
 
 def setup_results_directories(dataset):
     system(f"rm -rf results/{dataset}/*")
+    # For bucketing version
     for i in range(int(1 / EPSILON) + 1):
         mkdir(f"./results/{dataset}/{i}", )
+
+    # For pagerank version
+    mkdir(f"./results/{dataset}/pagerank")
 
 
 def pretty_print_embedding(embedding):
     pretty_print = ", ".join([f"{el} -> {idx + 1}" for idx, el in enumerate(embedding)])
-    print(f"Current embedding into R^1 = [{i} -> 0, {pretty_print}]")
+    print(f"Current embedding into R^1 = {pretty_print}")
 
 
 def load_graph(path):
@@ -93,7 +109,7 @@ def load_graph(path):
 
 def save_embedding(embedding):
     print("Saving...", end="")
-    for k, v in embedding.items(): 
+    for k, v in embedding.items():
         embedding[k] = int(v)
     embedding_string = json.dumps(embedding)
     with open(f"./results/graphs/facebook-{str(int(1 // EPSILON))}.json", "w+") as savefile:
