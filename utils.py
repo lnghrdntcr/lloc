@@ -1,14 +1,16 @@
+import json
 from io import BytesIO
 from math import factorial
+from math import floor
 from os import system, mkdir
+
+import networkx as nx
+import numpy as np
 import requests as req
 from PIL import Image
-from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
-import numpy as np
-from math import floor
 from tqdm import tqdm
-import networkx as nx
-import json
+
+from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
 
 
 def format_arguments(points, num_points, cpu_count):
@@ -91,8 +93,18 @@ def load_graph(path):
 
 def save_embedding(embedding):
     print("Saving...", end="")
+    for k, v in embedding.items(): 
+        embedding[k] = int(v)
     embedding_string = json.dumps(embedding)
     with open(f"./results/graphs/facebook-{str(int(1 // EPSILON))}.json", "w+") as savefile:
         savefile.write(embedding_string)
 
     print("done!")
+
+
+def maps_to(embedding, index):
+    vertices = []
+    for k, v in embedding.items():
+        if v == index:
+            vertices.append(int(k))
+    return vertices

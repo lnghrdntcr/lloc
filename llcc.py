@@ -146,6 +146,33 @@ def build_representative_embedding(buckets):
     return representatives, representatives_map
 
 
+def search_better_embedding(all_dataset, current_best_embedding, current_best_violated_constraints, point_id,
+                            process_id, representatives, representatives_map):
+
+    for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1, leave=False,
+                  desc=f"[Core {process_id}] Embeddings"):
+        next_representatives = representatives.copy()
+        next_representatives[i], next_representatives[i + 1] = next_representatives[i + 1], next_representatives[i]
+        cur_embedding = format_embedding(point_id, representatives, representatives_map)
+        next_embedding = format_embedding(point_id, next_representatives, representatives_map, move_pattern=(i, i + 1))
+
+        cur_violated_constraints = count_violated_constraints(cur_embedding, all_dataset)
+        next_violated_constraints = count_violated_constraints(next_embedding, all_dataset)
+
+        if cur_violated_constraints > next_violated_constraints:
+            representatives = next_representatives
+            representatives_map = next_embedding
+
+    embedding = format_embedding(point_id, representatives, representatives_map)
+    violated_constraints = count_violated_constraints(embedding, all_dataset)
+
+    if violated_constraints < current_best_violated_constraints:
+        current_best_embedding = embedding
+        current_best_violated_constraints = violated_constraints
+
+    return current_best_embedding, current_best_violated_constraints
+
+
 def llcc(idx_constraints, num_points, all_dataset, process_id):
     """
     Learns a line from the given constraints
@@ -156,7 +183,6 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         # find constraints where p_i is the first
         point_id = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
-
         G = build_graph_from_constraints(constraints, point_id)
         reoriented = feedback_arc_set(G)
         try:
@@ -178,10 +204,14 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
                                                                             all_dataset)
 
         # Perform exhaustive enumeration among all representatives
-        embedding, violated_constraints = bfs_search_best_embedding(all_dataset, best_embedding,
-                                                                    best_violated_constraints, point_id,
-                                                                    process_id, representatives,
-                                                                    representatives_map)
+        # embedding, violated_constraints = bfs_search_best_embedding(all_dataset, best_embedding,
+        #                                                             best_violated_constraints, point_id,
+        #                                                             process_id, representatives,
+        #                                                             representatives_map)
+
+        embedding, violated_constraints = search_better_embedding(all_dataset, best_embedding,
+                                                                  best_violated_constraints, point_id, process_id,
+                                                                  representatives, representatives_map)
 
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
@@ -213,6 +243,7 @@ def bfs_search_best_embedding(all_dataset, best_embedding, best_violated_constra
         # To have a decrease in violated constraints
         # I have to swap element in position move_to to element to position cursor
         move_to = np.argmin(violated_constraints)
+
         if move_to != 0:
             best_representatives[move_to + cursor], best_representatives[cursor] = best_representatives[cursor], \
                                                                                    best_representatives[
