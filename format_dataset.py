@@ -15,7 +15,7 @@ class TripletType(Enum):
     THREE_CLASS_TRIPLET = "THREE_CLASS_TRIPLET"
 
 
-def format_google_ds(path, early_stop_count=200, smart_constraints=False):
+def format_google_ds(path, early_stop_count=1000, smart_constraints=False):
     with open(path) as ds:
         cache = {}
         reverse_cache = {}
@@ -128,12 +128,12 @@ def read_mnist():
     return new_x_test, new_y_test
 
 
-def format_mnist_from_labels():
-    # FIXME: fast version doesn't work
+def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
     x_test, y_test = read_mnist()
     new_dataset = []
     idx_map = {}
     # do it on y_test, because is smaller
+    error_count = 0
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
         label = np.argmax(y)
         # if cache miss
@@ -144,12 +144,17 @@ def format_mnist_from_labels():
                     label3 = np.argmax(y_3)
                     if label3 > label2:
                         # I finally have a triplet!
-                        new_dataset.append([idx, idx2, idx3])
-                        idx_map[str(idx)] = label
-                        idx_map[str(idx2)] = label2
-                        idx_map[str(idx3)] = label3
+                        if rand() < inclusion_probability:
+                            idx_map[str(idx)] = label
+                            idx_map[str(idx2)] = label2
+                            idx_map[str(idx3)] = label3
 
-    return new_dataset, idx_map, (x_test, y_test)
+                            if rand() < (1 - error_probability):
+                                new_dataset.append([idx, idx2, idx3])
+                            else:
+                                new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
+                                error_count += 1
+    return new_dataset, idx_map, (x_test, y_test), error_count
 
 
 def format_mnist_from_correlations():

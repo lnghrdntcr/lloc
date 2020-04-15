@@ -3,7 +3,7 @@ from io import BytesIO
 from math import factorial
 from math import floor
 from os import system, mkdir
-
+from time import time
 import networkx as nx
 import numpy as np
 import requests as req
@@ -63,7 +63,8 @@ def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True)
         cur_image.save(f"./results/mnist/pagerank/{label}.png")
 
 
-def save_fec_results(embeddings, image_cache, crop_map):
+def save_fec_results(embeddings, image_cache, crop_map, directory=True):
+    idx = 0
     for image_index, directory in tqdm(embeddings.items()):
         url = image_cache[image_index]
         response = req.get(url.replace("\"", ""))
@@ -77,8 +78,11 @@ def save_fec_results(embeddings, image_cache, crop_map):
             top_left_row = w * float(tlr)
             bottom_right_row = w * float(brr)
             face = img_file.crop((top_left_col, top_left_row, bottom_right_col, bottom_right_row))
-            face.save(f"./results/FEC/{directory}/{image_index}.jpg")
-
+            #if directory:
+            #    face.save(f"./results/FEC/{directory}/{image_index}.jpg")
+            #else:
+            face.save(f"./results/FEC/pagerank/{idx}.jpg")
+            idx += 1
 
 def n_choose_k(n, k):
     assert n > k
@@ -89,6 +93,7 @@ def n_choose_k(n, k):
 
 
 def setup_results_directories(dataset):
+    system(f"cp -r results/{dataset} results/backup/{dataset}-{time()}")
     system(f"rm -rf results/{dataset}/*")
     # For bucketing version
     for i in range(int(1 / EPSILON) + 1):

@@ -8,27 +8,36 @@ from tqdm import tqdm
 from config import EPSILON
 
 
-def feedback_arc_set(G):
+def feedback_arc_set(G, bar=False, process_id=0):
     """
     Reorient edges incrementally to build a DAG
     :param G: Input Directed graph
     :return: A directed acyclic graph built from G
     """
     ret = G.copy()
-    cycles = list(nx.simple_cycles(ret))
+    cycles = nx.simple_cycles(ret)
+    edges_removed = 0
 
-    for cycle in cycles:
+    if bar: 
+        cycles_iterator = tqdm(cycles, position=process_id * 2, leave=False, desc=f"[Core {process_id}] FAS")
+    else: 
+        cycles_iterator = cycles
+
+    for cycle in cycles_iterator: 
         cycle_generating_vertices = list(combinations(cycle, 2))
         for vertices in cycle_generating_vertices:
             u, v = vertices
             try:
                 ret.remove_edge(u, v)
                 ret.add_edge(v, u)
-                cur_cycles = list(nx.simple_cycles(ret))
+                edges_removed += 1
+                cur_cycles = nx.simple_cycles(ret)
 
                 # Early exit condition, there are no more cycles
                 # so its pointless to continue to remove edges
-                if not cur_cycles:
+                try:
+                    next(cur_cycles)
+                except StopIteration:
                     return ret.copy()
             except nx.exception.NetworkXError:
                 pass
@@ -224,12 +233,12 @@ def build_graph_from_triplet_constraints(idx_constraints):
     return G.copy()
 
 
-def pagerank_llcc(idx_constraints, num_points, all_dataset, process_id):
+def pagerank_llcc(_, num_points, all_dataset, process_id):
     best_embedding = {}
     best_violated_constraints = float("inf")
 
     G = build_graph_from_triplet_constraints(all_dataset)
-    reoriented = feedback_arc_set(G)
+    reoriented = feedback_arc_set(G, bar=True, process_id=process_id)
     for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):
         point_id = i + process_id * num_points
 

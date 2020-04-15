@@ -19,12 +19,12 @@ if __name__ == "__main__":
     for ds in SUPPORTED_DATASETS:
         setup_results_directories(ds)
 
-    # idx_constraints, reverse_cache, crop_map = format_google_ds(
-    #      "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=2000)
+    #idx_constraints, reverse_cache, crop_map = format_google_ds(
+    #     "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=600, smart_constraints=True)
 
-    # format_mnist_from_correlations()
-    idx_constraints, reverse_cache, (x, y) = format_mnist_from_labels()
+    idx_constraints, reverse_cache, (x, y), error_count = format_mnist_from_labels(error_probability=0.0001)
     num_points = len(reverse_cache)
+    print(f"Errors -> {error_count}")
 
     process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count())
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     print(
         f"Best embedding with {best_violated_constraints} errors over {3 * len(idx_constraints)} constraints. Max possible constraints -> {num_points * int(n_choose_k(num_points, 2))} ")
 
-    # save_fec_results(best_embedding, reverse_cache, crop_map)
+    # save_fec_results(best_embedding, reverse_cache, crop_map, directory=False)
     for key, value in reverse_cache.items():
         try:
             embedding_key = str(best_embedding[str(key)])

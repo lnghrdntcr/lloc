@@ -1,5 +1,3 @@
-## Idea, since we build a graph at some point
-#  how does the algorithm behave when we feed a graph?
 from utils import load_graph, graph_format_arguments, save_embedding, maps_to, reverse_edges
 from llcc import graph_llcc
 from multiprocessing import Pool
@@ -18,8 +16,8 @@ if __name__ == "__main__":
         graph = load_graph("./datasets/graphs/facebook_combined.txt")
 
     pagerank = [key for key, _ in sorted(nx.pagerank(graph).items(), key=lambda x: x[1])]
-    top_x = pagerank[0:int(GRAPH_NUM_NODES / (1 + 1 / EPSILON))]
-    graph = reverse_edges(graph)
+    top_x = list(map(int, pagerank[0:10]))
+
     cpu_count = multiprocessing.cpu_count()
     process_pool = Pool(cpu_count)
     arguments = graph_format_arguments(graph, cpu_count)
