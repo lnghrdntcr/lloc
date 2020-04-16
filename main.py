@@ -2,11 +2,10 @@ from format_dataset import format_mnist_from_labels, format_google_ds, format_mn
 from IPython import embed
 from multiprocessing import Pool
 import multiprocessing
-from llcc import llcc, pagerank_llcc
+from llcc import llcc, pagerank_llcc, reorient_cycle_generating_edges
 from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments, save_fec_results
 
 from config import SUPPORTED_DATASETS
-
 
 if __name__ == "__main__":
     USE_PAGERANK = True
@@ -19,15 +18,15 @@ if __name__ == "__main__":
     for ds in SUPPORTED_DATASETS:
         setup_results_directories(ds)
 
-    #idx_constraints, reverse_cache, crop_map = format_google_ds(
+    # idx_constraints, reverse_cache, crop_map = format_google_ds(
     #     "./datasets/FEC_dataset/faceexp-comparison-data-test-public.csv", early_stop_count=600, smart_constraints=True)
 
-    idx_constraints, reverse_cache, (x, y), error_count = format_mnist_from_labels(error_probability=0.0001)
+    idx_constraints, reverse_cache, (x, y), error_count = format_mnist_from_labels(error_probability=0.1)
     num_points = len(reverse_cache)
     print(f"Errors -> {error_count}")
 
-    process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count())
-
+    process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count(),
+                                              use_pagerank=USE_PAGERANK)
     responses = process_pool.starmap(pagerank_llcc, process_pool_arguments)
 
     for embedding, n_violated_constraints in responses:

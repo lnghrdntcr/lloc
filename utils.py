@@ -11,21 +11,35 @@ from PIL import Image
 from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
+from llcc import reorient_cycle_generating_edges, build_graph_from_triplet_constraints
 
 
-def format_arguments(points, num_points, cpu_count):
+def format_arguments(points, num_points, cpu_count, use_pagerank=False):
     print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
-    new_points_ds = []
     arguments = []
+
+    if use_pagerank:
+        G = build_graph_from_triplet_constraints(points)
+        print("\nPrecomputing Graph...")
+        reoriented = reorient_cycle_generating_edges(G)
+
     for i in range(cpu_count - 1):
         projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
         dp = list(projected_datapoints)
-        arguments.append((dp, chunk_size, points.copy(), i))
+        if use_pagerank:
+            arguments.append((dp, chunk_size, points.copy(), i, reoriented))
+        else:
+            arguments.append((dp, chunk_size, points.copy(), i))
+
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
 
-    arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
+    if use_pagerank:
+        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, reoriented))
+    else:
+        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
+
     print("done!")
     return arguments
 
@@ -78,11 +92,12 @@ def save_fec_results(embeddings, image_cache, crop_map, directory=True):
             top_left_row = w * float(tlr)
             bottom_right_row = w * float(brr)
             face = img_file.crop((top_left_col, top_left_row, bottom_right_col, bottom_right_row))
-            #if directory:
+            # if directory:
             #    face.save(f"./results/FEC/{directory}/{image_index}.jpg")
-            #else:
+            # else:
             face.save(f"./results/FEC/pagerank/{idx}.jpg")
             idx += 1
+
 
 def n_choose_k(n, k):
     assert n > k

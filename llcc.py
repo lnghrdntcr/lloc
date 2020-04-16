@@ -8,6 +8,23 @@ from tqdm import tqdm
 from config import EPSILON
 
 
+def reorient_cycle_generating_edges(G: nx.DiGraph):
+    ret = G.copy()
+    for node in tqdm(ret.nodes):
+        in_edges = ret.in_edges(node)
+        neighbouring_nodes = map(lambda x: x[0] if x[1] == node else x[1], in_edges)
+        for neighbor in neighbouring_nodes:
+            try:
+                nx.shortest_path(ret, source=node, target=neighbor)
+                ret.remove_edge(node, neighbor)
+                next(nx.simple_cycles(ret))
+            except (nx.NetworkXNoPath, nx.NetworkXError):
+                continue
+            except StopIteration:
+                return ret
+    return ret
+
+
 def feedback_arc_set(G, bar=False, process_id=0):
     """
     Reorient edges incrementally to build a DAG
@@ -18,12 +35,12 @@ def feedback_arc_set(G, bar=False, process_id=0):
     cycles = nx.simple_cycles(ret)
     edges_removed = 0
 
-    if bar: 
+    if bar:
         cycles_iterator = tqdm(cycles, position=process_id * 2, leave=False, desc=f"[Core {process_id}] FAS")
-    else: 
+    else:
         cycles_iterator = cycles
 
-    for cycle in cycles_iterator: 
+    for cycle in cycles_iterator:
         cycle_generating_vertices = list(combinations(cycle, 2))
         for vertices in cycle_generating_vertices:
             u, v = vertices
@@ -233,16 +250,14 @@ def build_graph_from_triplet_constraints(idx_constraints):
     return G.copy()
 
 
-def pagerank_llcc(_, num_points, all_dataset, process_id):
+def pagerank_llcc(_, num_points, all_dataset, process_id, G):
     best_embedding = {}
     best_violated_constraints = float("inf")
 
-    G = build_graph_from_triplet_constraints(all_dataset)
-    reoriented = feedback_arc_set(G, bar=True, process_id=process_id)
     for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):
         point_id = i + process_id * num_points
 
-        pr = nx.pagerank(reoriented, personalization={point_id: 1})
+        pr = nx.pagerank(G, personalization={point_id: 1})
 
         sorted_pr = [str(k) for k, _ in sorted(pr.items(), key=lambda x: x[1])]
         embedding = dict([(v, i) for i, v in enumerate(sorted_pr)])
