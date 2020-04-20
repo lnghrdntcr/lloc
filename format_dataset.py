@@ -125,7 +125,16 @@ def read_mnist():
     for idx in indices:
         new_x_test.append(x_test[idx])
         new_y_test.append(y_test[idx])
-    return new_x_test, new_y_test
+
+    # Test against pagerank
+    sliced_y_test = []
+    for digit in new_y_test:
+        if np.argmax(digit) < 5 and rand() > 0.5:
+            continue
+        else:
+            sliced_y_test.append(digit)
+
+    return np.array(new_x_test), np.array(sliced_y_test)
 
 
 def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
@@ -136,7 +145,6 @@ def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
     error_count = 0
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
         label = np.argmax(y)
-        # if cache miss
         for idx2, y_2 in enumerate(y_test):
             label2 = np.argmax(y_2)
             if label2 > label:

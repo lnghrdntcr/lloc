@@ -24,7 +24,6 @@ def reorient_cycle_generating_edges(G: nx.DiGraph):
                 return ret
     return ret
 
-
 def feedback_arc_set(G, bar=False, process_id=0):
     """
     Reorient edges incrementally to build a DAG

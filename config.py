@@ -1,9 +1,10 @@
-EPSILON                = 1 / 3
+EPSILON                = 1 / 5
 MNIST_ROW_SIZE         = 28
 MNIST_COL_SIZE         = 28
 MNIST_SUBSAMPLE_FACTOR = 40
 MNIST_MEAN_VALUE_SCALE = 1.5
-MNIST_MIN_CORR_COEFF   = 0.8
+MNIST_MIN_CORR_COEFF   = 0.9
+USE_PAGERANK           = True
 SUPPORTED_DATASETS     = ["FEC", "mnist", "mnist_corr"]
 GRAPH_MOCK             = False
 GRAPH_NUM_NODES        = 4000
