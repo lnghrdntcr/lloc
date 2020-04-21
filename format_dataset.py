@@ -5,7 +5,7 @@ from struct import unpack
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
-from config import MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF
+from config import MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY
 from IPython import embed
 
 
@@ -104,16 +104,13 @@ def read_y_mnist(y_path):
 
 
 def read_mnist():
+    class_distribution = [0 for _ in range(10)]
+
     # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
     # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
     x_test = read_x_mnist("./datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
     y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
-
-    # Note that subsampling is done in this way due to the fact that
-    # labels in the mnist dataset are already distributed more or less
-    # uniformly at random
-    #     return x_train[0::MNIST_SUBSAMPLE_FACTOR], y_train[0::MNIST_SUBSAMPLE_FACTOR], x_test[0::MNIST_SUBSAMPLE_FACTOR], y_test[0::MNIST_SUBSAMPLE_FACTOR]
 
     indices = set()
     for _ in range(int(len(x_test) / MNIST_SUBSAMPLE_FACTOR)):
@@ -129,20 +126,24 @@ def read_mnist():
     # Test against pagerank
     sliced_y_test = []
     for digit in new_y_test:
-        if np.argmax(digit) < 5 and rand() > 0.5:
+        digit_class = np.argmax(digit)
+        if digit_class < 5 and rand() < MNIST_DIGIT_EXCLUSION_PROBABILITY:
             continue
         else:
             sliced_y_test.append(digit)
+            class_distribution[int(digit_class)] += 1
 
-    return np.array(new_x_test), np.array(sliced_y_test)
+    class_distribution = [el / len(sliced_y_test) for el in class_distribution]
+
+    return np.array(new_x_test), np.array(sliced_y_test), class_distribution
 
 
 def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
-    x_test, y_test = read_mnist()
+    x_test, y_test, class_distribution = read_mnist()
     new_dataset = []
     idx_map = {}
-    # do it on y_test, because is smaller
     error_count = 0
+    # do it on y_test, because is smaller
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
         label = np.argmax(y)
         for idx2, y_2 in enumerate(y_test):
@@ -162,7 +163,7 @@ def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
                             else:
                                 new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
                                 error_count += 1
-    return new_dataset, idx_map, (x_test, y_test), error_count
+    return new_dataset, idx_map, (x_test, y_test), class_distribution
 
 
 def format_mnist_from_correlations():

@@ -1,4 +1,5 @@
 import random
+from collections import OrderedDict
 from itertools import combinations
 
 import networkx as nx
@@ -6,17 +7,20 @@ import numpy as np
 from tqdm import tqdm
 
 from config import EPSILON
+from random import uniform as rand
 
 
-def reorient_cycle_generating_edges(G: nx.DiGraph):
+def feedback_arc_set(G: nx.DiGraph, process_id=0):
     ret = G.copy()
-    for node in tqdm(ret.nodes):
+    for node in tqdm(ret.nodes, position=process_id * 2 + 1, leave=False, desc=f"[Core {process_id}] FAS        "):
         in_edges = ret.in_edges(node)
-        neighbouring_nodes = map(lambda x: x[0] if x[1] == node else x[1], in_edges)
+        neighbouring_nodes = list(map(lambda x: x[0] if x[1] == node else x[1], in_edges))
+
         for neighbor in neighbouring_nodes:
             try:
-                nx.shortest_path(ret, source=node, target=neighbor)
-                ret.remove_edge(node, neighbor)
+                path = nx.shortest_path(ret, source=node, target=neighbor)
+                random_idx = random.randint(0, len(path) - 1)
+                ret.remove_edge(path[random_idx], path[(random_idx + 1) % len(path)])
                 next(nx.simple_cycles(ret))
             except (nx.NetworkXNoPath, nx.NetworkXError):
                 continue
@@ -24,7 +28,8 @@ def reorient_cycle_generating_edges(G: nx.DiGraph):
                 return ret
     return ret
 
-def feedback_arc_set(G, bar=False, process_id=0):
+
+def old_feedback_arc_set(G, bar=False, process_id=0):
     """
     Reorient edges incrementally to build a DAG
     :param G: Input Directed graph
@@ -61,39 +66,87 @@ def feedback_arc_set(G, bar=False, process_id=0):
     return ret.copy()
 
 
-def get_buckets(arr, num_buckets):
+def get_buckets(arr, num_buckets, class_distribution):
+    """
+    Does bucketing respecting class distribution
+    :param arr:
+    :param num_buckets:
+    :param class_distribution:
+    :return:
+    """
     buckets = []
     bucketing_factor = int(len(arr) // num_buckets)
     last_base = (num_buckets - 1) * bucketing_factor
-    for idx in range(num_buckets - 1):
-        base = idx * bucketing_factor
-        buckets.append(arr[base: base + bucketing_factor])
-    buckets.append(arr[last_base:])
+
+    bucketed_class_distribution = [0 for _ in range(num_buckets)]
+    elements_to_aggregate = len(class_distribution) // num_buckets
+    i = 0
+    for _ in range(num_buckets - 1):
+        acc = 0
+        for j in range(i, i + elements_to_aggregate):
+            acc += class_distribution[j]
+
+        bucketed_class_distribution[i // elements_to_aggregate] = acc
+        i += elements_to_aggregate
+
+    base_idx = 0
+    for elements_distribution in bucketed_class_distribution[:-1]:
+        until_idx = base_idx + int(elements_distribution * len(arr))
+        buckets.append(arr[base_idx: until_idx])
+        base_idx = until_idx
+
+    buckets.append(arr[base_idx:])
     return buckets
 
 
-def format_embedding(base, embedding, mapped_to_representatives, move_pattern=None):
-    ret = {
-        str(base): 0
-    }
+def format_embedding(base, embedding, mapped_to_representatives, class_distribution, move_pattern=None):
+    ret = OrderedDict()
+    ret[str(base)] = 0
+
+    assert len(class_distribution) == len(embedding)
+
+    most_frequent_class = np.max(class_distribution)
 
     for i, el in enumerate(embedding):
         ret[str(el)] = i + 1
 
-    for key, value in mapped_to_representatives.items():
+    # skip elements that are mapped to zero
+    for key, maps_to in list(ret.items())[1:]:
+        # get all_elements that are mapped to `maps_to`
+        bucket_elements = list(filter(lambda x: x[1] == maps_to, mapped_to_representatives.items()))
+        # Note: class distribution changes as the elements of the embedding are swapped
+        scale_factor = most_frequent_class / class_distribution[int(maps_to) - 1]
+        # now i map all of those elements from (0.5 - maps_to, 0.5 + maps_to) uniformly at random
+        # note: if move_pattern != None the only thing I need to change is the element_maps_to value
+        for key, _ in bucket_elements:
 
-        if move_pattern is not None:
-            if value == move_pattern[0]:
-                ret[key] = move_pattern[1]
-            elif value == move_pattern[1]:
-                ret[key] = move_pattern[0]
-        else:
-            ret[key] = value
+            if move_pattern is not None:
+                if maps_to == move_pattern[0]:
+                    new_maps_to = move_pattern[1]
+                elif maps_to == move_pattern[1]:
+                    new_maps_to = move_pattern[0]
+                else:
+                    new_maps_to = maps_to
+            else:
+                new_maps_to = maps_to
+
+            position = rand(0.5 * scale_factor - new_maps_to, 0.5 * scale_factor + new_maps_to)
+            ret[str(key)] = position
+
+    # for key, value in mapped_to_representatives.items():
+    #
+    #     if move_pattern is not None:
+    #         if value == move_pattern[0]:
+    #             ret[key] = move_pattern[1]
+    #         elif value == move_pattern[1]:
+    #             ret[key] = move_pattern[0]
+    #     else:
+    #         ret[key] = value
 
     return ret
 
 
-def count_violated_constraints(embedding, constraints, buckets=False):
+def count_violated_constraints(embedding, constraints, ignore_missing_values=False):
     count = 0
     for constraint in constraints:
         unrolled_constraints = combinations(constraint, 2)
@@ -104,7 +157,7 @@ def count_violated_constraints(embedding, constraints, buckets=False):
             f_t = embedding.get(str(t))
             if (f_s is not None) and (f_t is not None):
                 count += int(f_s > f_t)
-            elif not buckets:
+            elif not ignore_missing_values:
                 count += 1
 
     return count
@@ -160,7 +213,7 @@ def graph_patch_representative_map_from_all_constraints(representative_map, grap
 
 def build_representative_embedding(buckets):
     representatives = []
-    representatives_map = {}
+    representatives_map = OrderedDict()
 
     for idx, bucket in enumerate(buckets):
         representatives.append(random.choice(bucket))
@@ -172,23 +225,36 @@ def build_representative_embedding(buckets):
 
 
 def search_better_embedding(all_dataset, current_best_embedding, current_best_violated_constraints, point_id,
-                            process_id, representatives, representatives_map):
+                            process_id, representatives, representatives_map, class_distribution):
+    local_best_embedding = None
+    local_best_violated_constraints = float("inf")
+
     for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1, leave=False,
-                  desc=f"[Core {process_id}] Embeddings"):
+                  desc=f"[Core {process_id}] Embeddings "):
         next_representatives = representatives.copy()
         next_representatives[i], next_representatives[i + 1] = next_representatives[i + 1], next_representatives[i]
-        cur_embedding = format_embedding(point_id, representatives, representatives_map)
-        next_embedding = format_embedding(point_id, next_representatives, representatives_map, move_pattern=(i, i + 1))
+        next_class_distribution = class_distribution.copy()
+        next_class_distribution[i], next_class_distribution[i + 1] = next_class_distribution[i + 1], next_class_distribution[i]
 
-        cur_violated_constraints = count_violated_constraints(cur_embedding, all_dataset)
+        if local_best_embedding is None:
+            local_best_embedding = format_embedding(point_id, representatives, representatives_map, class_distribution)
+
+        next_embedding = format_embedding(point_id, next_representatives, representatives_map, next_class_distribution, move_pattern=(i, i + 1))
+
+        if local_best_violated_constraints == float("inf"):
+            local_best_violated_constraints = count_violated_constraints(local_best_embedding, all_dataset)
+
         next_violated_constraints = count_violated_constraints(next_embedding, all_dataset)
 
-        if cur_violated_constraints > next_violated_constraints:
+        if local_best_violated_constraints > next_violated_constraints:
             representatives = next_representatives
-            representatives_map = next_embedding
+            representatives_map = next_embedding.copy()
+            local_best_embedding = next_embedding.copy()
+            local_best_violated_constraints = next_violated_constraints
+            class_distribution = next_class_distribution
 
-    embedding = format_embedding(point_id, representatives, representatives_map)
-    violated_constraints = count_violated_constraints(embedding, all_dataset)
+    embedding = local_best_embedding.copy()
+    violated_constraints = local_best_violated_constraints
 
     if violated_constraints < current_best_violated_constraints:
         current_best_embedding = embedding
@@ -197,18 +263,18 @@ def search_better_embedding(all_dataset, current_best_embedding, current_best_vi
     return current_best_embedding, current_best_violated_constraints
 
 
-def llcc(idx_constraints, num_points, all_dataset, process_id):
+def llcc(idx_constraints, num_points, all_dataset, process_id, class_distribution):
     """
     Learns a line from the given constraints
     """
-    best_embedding = {}
+    best_embedding = OrderedDict()
     best_violated_constraints = float("inf")
-    for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):
+    for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
         point_id = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
         G = build_graph_from_constraints(constraints, point_id)
-        reoriented = feedback_arc_set(G)
+        reoriented = feedback_arc_set(G, process_id=process_id)
         try:
             topological_ordered_nodes = list(nx.topological_sort(reoriented))
         except nx.exception.NetworkXUnfeasible:
@@ -216,7 +282,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
             continue
 
         num_buckets = int(1 / EPSILON)
-        buckets = get_buckets(topological_ordered_nodes, num_buckets)
+        buckets = get_buckets(topological_ordered_nodes, num_buckets, class_distribution)
 
         if not buckets[0]:
             # Skip iteration if the point had no constraints to begin with
@@ -229,7 +295,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
 
         embedding, violated_constraints = search_better_embedding(all_dataset, best_embedding,
                                                                   best_violated_constraints, point_id, process_id,
-                                                                  representatives, representatives_map)
+                                                                  representatives, representatives_map, class_distribution)
 
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
@@ -250,7 +316,7 @@ def build_graph_from_triplet_constraints(idx_constraints):
 
 
 def pagerank_llcc(_, num_points, all_dataset, process_id, G):
-    best_embedding = {}
+    best_embedding = OrderedDict()
     best_violated_constraints = float("inf")
 
     for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):
@@ -270,7 +336,7 @@ def pagerank_llcc(_, num_points, all_dataset, process_id, G):
 
 
 def graph_llcc(nodes, graph: nx.DiGraph, process_id):
-    best_embedding = {}
+    best_embedding = OrderedDict()
     best_violated_constraints = float("inf")
 
     for node in tqdm(nodes, position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):

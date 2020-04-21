@@ -11,10 +11,10 @@ from PIL import Image
 from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
-from llcc import reorient_cycle_generating_edges, build_graph_from_triplet_constraints
+from llcc import feedback_arc_set, build_graph_from_triplet_constraints
 
 
-def format_arguments(points, num_points, cpu_count, use_pagerank=False):
+def format_arguments(points, num_points, cpu_count, class_distribution, use_pagerank=False):
     print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
     arguments = []
@@ -22,7 +22,7 @@ def format_arguments(points, num_points, cpu_count, use_pagerank=False):
     if use_pagerank:
         G = build_graph_from_triplet_constraints(points)
         print("\nPrecomputing Graph...")
-        reoriented = reorient_cycle_generating_edges(G)
+        reoriented = feedback_arc_set(G)
 
     for i in range(cpu_count - 1):
         projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
@@ -30,7 +30,7 @@ def format_arguments(points, num_points, cpu_count, use_pagerank=False):
         if use_pagerank:
             arguments.append((dp, chunk_size, points.copy(), i, reoriented))
         else:
-            arguments.append((dp, chunk_size, points.copy(), i))
+            arguments.append((dp, chunk_size, points.copy(), i, class_distribution))
 
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
@@ -38,7 +38,7 @@ def format_arguments(points, num_points, cpu_count, use_pagerank=False):
     if use_pagerank:
         arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, reoriented))
     else:
-        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
+        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, class_distribution))
 
     print("done!")
     return arguments
@@ -66,13 +66,13 @@ def reverse_edges(G):
     return ret
 
 
-def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True):
+def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True, image_name=0):
     cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
-    if correlation:
-        cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
+    # if correlation:
+    #     cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
 
     if bucketing:
-        cur_image.save(f"./results/mnist/{label}/{idx}.png")
+        cur_image.save(f"./results/mnist/{label}/{image_name}.png")
     else:
         cur_image.save(f"./results/mnist/pagerank/{label}.png")
 
