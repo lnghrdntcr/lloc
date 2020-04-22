@@ -105,7 +105,7 @@ def read_y_mnist(y_path):
 
 def read_mnist():
     class_distribution = [0 for _ in range(10)]
-
+    real_class_distribution = class_distribution.copy()
     # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
     # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
@@ -127,6 +127,7 @@ def read_mnist():
     sliced_y_test = []
     for digit in new_y_test:
         digit_class = np.argmax(digit)
+        real_class_distribution[digit_class] += 1
         if digit_class < 5 and rand() < MNIST_DIGIT_EXCLUSION_PROBABILITY:
             continue
         else:

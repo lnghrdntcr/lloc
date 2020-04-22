@@ -4,6 +4,7 @@ from math import factorial
 from math import floor
 from os import system, mkdir
 from time import time
+
 import networkx as nx
 import numpy as np
 import requests as req
@@ -68,13 +69,11 @@ def reverse_edges(G):
 
 def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True, image_name=0):
     cur_image = Image.fromarray(image_array.reshape((MNIST_ROW_SIZE, MNIST_COL_SIZE)).astype(np.uint8))
-    # if correlation:
-    #     cur_image.save(f"./results/mnist_corr/{label}/{idx}.png")
 
     if bucketing:
         cur_image.save(f"./results/mnist/{label}/{image_name}.png")
     else:
-        cur_image.save(f"./results/mnist/pagerank/{label}.png")
+        cur_image.save(f"./results/mnist/new_algo/{image_name}.png")
 
 
 def save_fec_results(embeddings, image_cache, crop_map, directory=True):
@@ -116,6 +115,7 @@ def setup_results_directories(dataset):
 
     # For pagerank version
     mkdir(f"./results/{dataset}/pagerank")
+    mkdir(f"./results/{dataset}/new_algo")
 
 
 def pretty_print_embedding(embedding):
@@ -144,3 +144,30 @@ def maps_to(embedding, index):
         if v == index:
             vertices.append(int(k))
     return vertices
+
+
+def map_class_distribution_to_bucket_distribution(class_distribution):
+    num_buckets = int(1 / EPSILON)
+    bucketed_class_distribution = [0 for _ in range(num_buckets)]
+    elements_to_aggregate = len(class_distribution) // num_buckets
+    i = 0
+    for _ in range(num_buckets - 1):
+        acc = 0
+        for j in range(i, i + elements_to_aggregate):
+            acc += class_distribution[j]
+
+        bucketed_class_distribution[i // elements_to_aggregate] = acc
+        i += elements_to_aggregate
+
+    bucketed_class_distribution[-1] = 1 - sum(bucketed_class_distribution)
+    return bucketed_class_distribution
+
+
+def select_bucket_from_embedding_value(value, class_distr):
+    most_frequent_class = np.max(class_distr)
+
+    for i in range(int(1 // EPSILON)):
+        scaling_factor = most_frequent_class / class_distr[i]
+        if i - 0.1 * scaling_factor <= value <= i + 0.1 * scaling_factor:
+            return i
+    return int(1 // EPSILON)

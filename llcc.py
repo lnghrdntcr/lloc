@@ -5,9 +5,9 @@ from itertools import combinations
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
+from numpy.random import uniform as rand
 
 from config import EPSILON
-from random import uniform as rand
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
@@ -18,14 +18,15 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
 
         for neighbor in neighbouring_nodes:
             try:
+                next(nx.simple_cycles(ret))
                 path = nx.shortest_path(ret, source=node, target=neighbor)
                 random_idx = random.randint(0, len(path) - 1)
                 ret.remove_edge(path[random_idx], path[(random_idx + 1) % len(path)])
-                next(nx.simple_cycles(ret))
             except (nx.NetworkXNoPath, nx.NetworkXError):
                 continue
             except StopIteration:
                 return ret
+
     return ret
 
 
@@ -66,28 +67,16 @@ def old_feedback_arc_set(G, bar=False, process_id=0):
     return ret.copy()
 
 
-def get_buckets(arr, num_buckets, class_distribution):
+def get_buckets(arr, num_buckets, bucketed_class_distribution):
     """
     Does bucketing respecting class distribution
     :param arr:
     :param num_buckets:
-    :param class_distribution:
+    :param bucketed_class_distribution:
     :return:
     """
     buckets = []
     bucketing_factor = int(len(arr) // num_buckets)
-    last_base = (num_buckets - 1) * bucketing_factor
-
-    bucketed_class_distribution = [0 for _ in range(num_buckets)]
-    elements_to_aggregate = len(class_distribution) // num_buckets
-    i = 0
-    for _ in range(num_buckets - 1):
-        acc = 0
-        for j in range(i, i + elements_to_aggregate):
-            acc += class_distribution[j]
-
-        bucketed_class_distribution[i // elements_to_aggregate] = acc
-        i += elements_to_aggregate
 
     base_idx = 0
     for elements_distribution in bucketed_class_distribution[:-1]:
@@ -130,18 +119,9 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
             else:
                 new_maps_to = maps_to
 
-            position = rand(0.5 * scale_factor - new_maps_to, 0.5 * scale_factor + new_maps_to)
+            #position = rand(0.01 * scale_factor - new_maps_to, 0.01 * scale_factor + new_maps_to)
+            position = new_maps_to
             ret[str(key)] = position
-
-    # for key, value in mapped_to_representatives.items():
-    #
-    #     if move_pattern is not None:
-    #         if value == move_pattern[0]:
-    #             ret[key] = move_pattern[1]
-    #         elif value == move_pattern[1]:
-    #             ret[key] = move_pattern[0]
-    #     else:
-    #         ret[key] = value
 
     return ret
 
@@ -234,12 +214,14 @@ def search_better_embedding(all_dataset, current_best_embedding, current_best_vi
         next_representatives = representatives.copy()
         next_representatives[i], next_representatives[i + 1] = next_representatives[i + 1], next_representatives[i]
         next_class_distribution = class_distribution.copy()
-        next_class_distribution[i], next_class_distribution[i + 1] = next_class_distribution[i + 1], next_class_distribution[i]
+        next_class_distribution[i], next_class_distribution[i + 1] = next_class_distribution[i + 1], \
+                                                                     next_class_distribution[i]
 
         if local_best_embedding is None:
             local_best_embedding = format_embedding(point_id, representatives, representatives_map, class_distribution)
 
-        next_embedding = format_embedding(point_id, next_representatives, representatives_map, next_class_distribution, move_pattern=(i, i + 1))
+        next_embedding = format_embedding(point_id, next_representatives, representatives_map, next_class_distribution,
+                                          move_pattern=(i, i + 1))
 
         if local_best_violated_constraints == float("inf"):
             local_best_violated_constraints = count_violated_constraints(local_best_embedding, all_dataset)
@@ -295,7 +277,8 @@ def llcc(idx_constraints, num_points, all_dataset, process_id, class_distributio
 
         embedding, violated_constraints = search_better_embedding(all_dataset, best_embedding,
                                                                   best_violated_constraints, point_id, process_id,
-                                                                  representatives, representatives_map, class_distribution)
+                                                                  representatives, representatives_map,
+                                                                  class_distribution)
 
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
