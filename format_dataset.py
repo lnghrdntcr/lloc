@@ -139,31 +139,52 @@ def read_mnist():
     return np.array(new_x_test), np.array(sliced_y_test), class_distribution
 
 
-def format_mnist_from_labels(inclusion_probability=1, error_probability=0):
+def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_distance=True):
     x_test, y_test, class_distribution = read_mnist()
+    constraint_distribution = [0 for _ in range(10)]
     new_dataset = []
     idx_map = {}
     error_count = 0
     # do it on y_test, because is smaller
     for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
         label = np.argmax(y)
-        for idx2, y_2 in enumerate(y_test):
-            label2 = np.argmax(y_2)
-            if label2 > label:
+        if use_distance:
+            for idx2, y_2 in enumerate(y_test):
+                label2 = np.argmax(y_2)
                 for idx3, y_3 in enumerate(y_test):
                     label3 = np.argmax(y_3)
-                    if label3 > label2:
-                        # I finally have a triplet!
-                        if rand() < inclusion_probability:
-                            idx_map[str(idx)] = label
-                            idx_map[str(idx2)] = label2
-                            idx_map[str(idx3)] = label3
+                    if (np.abs(label - label2) < np.abs(label - label3)) and (rand() < inclusion_probability):
+                        constraint_distribution[label] += 1
+                        idx_map[str(idx)] = label
+                        idx_map[str(idx2)] = label2
+                        idx_map[str(idx3)] = label3
 
-                            if rand() < (1 - error_probability):
-                                new_dataset.append([idx, idx2, idx3])
-                            else:
-                                new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
-                                error_count += 1
+                        if rand() < (1 - error_probability):
+                            new_dataset.append([idx, idx2, idx3])
+                        else:
+                            new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
+                            error_count += 1
+        else:
+            for idx2, y_2 in enumerate(y_test):
+                label2 = np.argmax(y_2)
+                if label2 > label:
+                    for idx3, y_3 in enumerate(y_test):
+                        label3 = np.argmax(y_3)
+                        if label3 > label2:
+                            # I finally have a triplet!
+                            if rand() < inclusion_probability:
+                                constraint_distribution[label] += 1
+                                idx_map[str(idx)] = label
+                                idx_map[str(idx2)] = label2
+                                idx_map[str(idx3)] = label3
+
+                                if rand() < (1 - error_probability):
+                                    new_dataset.append([idx, idx2, idx3])
+                                else:
+                                    new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
+                                    error_count += 1
+
+    print(f"Constraints distribution per digit -> {constraint_distribution}\nTotal number of constraints -> {sum(constraint_distribution)}")
     return new_dataset, idx_map, (x_test, y_test), class_distribution
 
 

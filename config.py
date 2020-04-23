@@ -1,19 +1,26 @@
-EPSILON                                = 1 / 9
+from os import environ
+
+EPSILON                                = 1 / 3
 MNIST_ROW_SIZE                         = 28
 MNIST_COL_SIZE                         = 28
-MNIST_SUBSAMPLE_FACTOR                 = 40
+MNIST_SUBSAMPLE_FACTOR                 = 80
 MNIST_MEAN_VALUE_SCALE                 = 1.5
 MNIST_MIN_CORR_COEFF                   = 0.9
 MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1
-MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.1
+MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.0
 MNIST_ERROR_RATE                       = 0.0
+MNIST_BUCKETS_BASE_WIDTH               = 0.1
 USE_PAGERANK                           = False
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False
 GRAPH_NUM_NODES                        = 4000
 
-# I want the size of the interval from which I'm embedding the points to be inversly proportional to the class distribution
-# for instance -> if all elements are distributed uniformly the buckets should be somewhat contiguos and the range is (0.5 - base, 0.5 + base)
-# but if the presence of a class is half of the average I want to make overlaps possible -> for instance if the class of 1 is 0.5 of the size of the maximum class
-# I want the interval to be twice as big!
-# So it should be something like (0.5 * scale_factor - base, 0.5 * scale_factor + base)
+if ENVIRON_EPSILON := environ.get("EPSILON"):
+    EPSILON = float(ENVIRON_EPSILON)
+
+if ENVIRON_MNIST_DIGIT_EXCLUSION_PROBABILITY := environ.get("MNIST_DIGIT_EXCLUSION_PROBABILITY"):
+    MNIST_DIGIT_EXCLUSION_PROBABILITY = float(ENVIRON_MNIST_DIGIT_EXCLUSION_PROBABILITY)
+
+if ENVIRON_MNIST_ERROR_RATE := environ.get("MNIST_ERROR_RATE"):
+    MNIST_ERROR_RATE = ENVIRON_MNIST_ERROR_RATE
+

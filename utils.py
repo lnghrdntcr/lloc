@@ -2,6 +2,7 @@ import json
 from io import BytesIO
 from math import factorial
 from math import floor
+from os import path
 from os import system, mkdir
 from time import time
 
@@ -11,7 +12,7 @@ import requests as req
 from PIL import Image
 from tqdm import tqdm
 
-from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE
+from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
 from llcc import feedback_arc_set, build_graph_from_triplet_constraints
 
 
@@ -168,6 +169,18 @@ def select_bucket_from_embedding_value(value, class_distr):
 
     for i in range(int(1 // EPSILON)):
         scaling_factor = most_frequent_class / class_distr[i]
-        if i - 0.1 * scaling_factor <= value <= i + 0.1 * scaling_factor:
+        if i - MNIST_BUCKETS_BASE_WIDTH * scaling_factor <= value <= i + MNIST_BUCKETS_BASE_WIDTH * scaling_factor:
             return i
     return int(1 // EPSILON)
+
+
+def save_csv_results(epsilon, violated_constraints, total_number_constraints, algo_type,
+                     constraint_type, missing_digits_probability, error_probability):
+    if not path.exists("./results/results.csv"):
+        with open("./results/results.csv", "w+") as file:
+            file.write(
+                "epsilon, violated_constraints, total_number_constraints, max_number_constraints, algo_type, constraint_type, missing_digits_probability, error_probability\n")
+
+    with open("./results/results.csv", "a+") as file:
+        file.write(
+            f"{epsilon}, {violated_constraints}, {total_number_constraints}, {algo_type}, {constraint_type}, {missing_digits_probability}, {error_probability}\n")

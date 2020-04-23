@@ -6,8 +6,9 @@ import networkx as nx
 import numpy as np
 from tqdm import tqdm
 from numpy.random import uniform as rand
+from IPython import embed
 
-from config import EPSILON
+from config import EPSILON, MNIST_BUCKETS_BASE_WIDTH
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
@@ -19,9 +20,13 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
         for neighbor in neighbouring_nodes:
             try:
                 next(nx.simple_cycles(ret))
-                path = nx.shortest_path(ret, source=node, target=neighbor)
-                random_idx = random.randint(0, len(path) - 1)
-                ret.remove_edge(path[random_idx], path[(random_idx + 1) % len(path)])
+                path_from = nx.shortest_path(ret, source=node, target=neighbor)
+                random_idx = random.randint(0, len(path_from) - 1)
+                ret.remove_edge(path_from[random_idx], path_from[(random_idx + 1) % len(path_from)])
+
+                path_to = nx.shortest_path(ret, source=neighbor, target=node)
+                random_idx = random.randint(0, len(path_to) - 1)
+                ret.remove_edge(path_to[random_idx], path_to[(random_idx + 1) % len(path_to)])
             except (nx.NetworkXNoPath, nx.NetworkXError):
                 continue
             except StopIteration:
@@ -37,11 +42,18 @@ def old_feedback_arc_set(G, bar=False, process_id=0):
     :return: A directed acyclic graph built from G
     """
     ret = G.copy()
+
+    for node in ret.nodes:
+        try:
+            ret.remove_edge(node, node)
+        except:
+            continue
+
     cycles = nx.simple_cycles(ret)
     edges_removed = 0
 
     if bar:
-        cycles_iterator = tqdm(cycles, position=process_id * 2, leave=False, desc=f"[Core {process_id}] FAS")
+        cycles_iterator = tqdm(cycles, position=process_id * 2 + 1, leave=False, desc=f"[Core {process_id}] FAS")
     else:
         cycles_iterator = cycles
 
@@ -63,7 +75,6 @@ def old_feedback_arc_set(G, bar=False, process_id=0):
                     return ret.copy()
             except nx.exception.NetworkXError:
                 pass
-
     return ret.copy()
 
 
@@ -75,6 +86,13 @@ def get_buckets(arr, num_buckets, bucketed_class_distribution):
     :param bucketed_class_distribution:
     :return:
     """
+    # IDEA:
+    # I want the size of the interval from which I'm embedding the points to be inversly proportional to the class distribution
+    # for instance -> if all elements are distributed uniformly the buckets should be somewhat contiguos and the range is (0.5 - base, 0.5 + base)
+    # but if the presence of a class is half of the average I want to make overlaps possible -> for instance if the class of 1 is 0.5 of the size of the maximum class
+    # I want the interval to be twice as big!
+    # So it should be something like (0.5 * scale_factor - base, 0.5 * scale_factor + base)
+
     buckets = []
     bucketing_factor = int(len(arr) // num_buckets)
 
@@ -119,8 +137,8 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
             else:
                 new_maps_to = maps_to
 
-            #position = rand(0.01 * scale_factor - new_maps_to, 0.01 * scale_factor + new_maps_to)
-            position = new_maps_to
+            position = rand(MNIST_BUCKETS_BASE_WIDTH * scale_factor - new_maps_to, MNIST_BUCKETS_BASE_WIDTH * scale_factor + new_maps_to)
+            #position = new_maps_to
             ret[str(key)] = position
 
     return ret
@@ -129,16 +147,18 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
 def count_violated_constraints(embedding, constraints, ignore_missing_values=False):
     count = 0
     for constraint in constraints:
-        unrolled_constraints = combinations(constraint, 2)
-        for unrolled_constraint in unrolled_constraints:
-            assert len(unrolled_constraint) == 2
-            s, t = unrolled_constraint
-            f_s = embedding.get(str(s))
-            f_t = embedding.get(str(t))
-            if (f_s is not None) and (f_t is not None):
-                count += int(f_s > f_t)
-            elif not ignore_missing_values:
-                count += 1
+        s, t, k = constraint
+        # unrolled_constraints = combinations(constraint, 2)
+        # for unrolled_constraint in unrolled_constraints:
+        #     assert len(unrolled_constraint) == 2
+        #   s, t = unrolled_constraint
+        f_i = embedding.get(str(s))
+        f_j = embedding.get(str(t))
+        f_k = embedding.get(str(k))
+        if (f_i is not None) and (f_j is not None) and (f_k is not None):
+            count += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k))
+        elif not ignore_missing_values:
+            count += 1
 
     return count
 
