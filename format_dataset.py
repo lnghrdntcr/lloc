@@ -24,8 +24,6 @@ def format_google_ds(path, early_stop_count=1000, smart_constraints=False):
 
         new_ds = []
         for line in ds:
-            if rand() > 0.5:
-                continue
             row_split = line.split(",")
             # There is an image every 4 elements
             images = [str(row_split[0]), str(row_split[5]), str(row_split[10])]
@@ -39,15 +37,15 @@ def format_google_ds(path, early_stop_count=1000, smart_constraints=False):
                         row_split[base * 5 + 1],  # top_left_col
                         row_split[base * 5 + 2],  # bottom_right_col
                         row_split[base * 5 + 3],  # top_left_row
-                        row_split[base * 5 + 4]  # bottom_right_row
+                        row_split[base * 5 + 4]   # bottom_right_row
                     ]
                     next_idx += 1
 
             if smart_constraints:
-                if TripletType.THREE_CLASS_TRIPLET in row_split:
-                    new_ds.append([cache[label] for label in reversed(images)])
-                else:
+                if TripletType.ONE_CLASS_TRIPLET in row_split:
                     new_ds.append([cache[label] for label in images])
+                # else:
+                #     new_ds.append([cache[label] for label in images])
             else:
                 new_ds.append([cache[label] for label in images])
 

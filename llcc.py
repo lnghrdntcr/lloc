@@ -137,8 +137,8 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
             else:
                 new_maps_to = maps_to
 
-            position = rand(MNIST_BUCKETS_BASE_WIDTH * scale_factor - new_maps_to, MNIST_BUCKETS_BASE_WIDTH * scale_factor + new_maps_to)
-            #position = new_maps_to
+            #position = rand(MNIST_BUCKETS_BASE_WIDTH * scale_factor - new_maps_to, MNIST_BUCKETS_BASE_WIDTH * scale_factor + new_maps_to)
+            position = new_maps_to
             ret[str(key)] = position
 
     return ret
@@ -147,16 +147,16 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
 def count_violated_constraints(embedding, constraints, ignore_missing_values=False):
     count = 0
     for constraint in constraints:
-        s, t, k = constraint
-        # unrolled_constraints = combinations(constraint, 2)
-        # for unrolled_constraint in unrolled_constraints:
-        #     assert len(unrolled_constraint) == 2
-        #   s, t = unrolled_constraint
-        f_i = embedding.get(str(s))
-        f_j = embedding.get(str(t))
-        f_k = embedding.get(str(k))
-        if (f_i is not None) and (f_j is not None) and (f_k is not None):
-            count += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k))
+        #s, t, k = constraint
+        unrolled_constraints = combinations(constraint, 2)
+        for unrolled_constraint in unrolled_constraints:
+            assert len(unrolled_constraint) == 2
+            s, t = unrolled_constraint
+            f_i = embedding.get(str(s))
+            f_j = embedding.get(str(t))
+            #f_k = embedding.get(str(k))
+        if (f_i is not None) and (f_j is not None):
+            count += int(f_i > f_j)
         elif not ignore_missing_values:
             count += 1
 
@@ -265,12 +265,14 @@ def search_better_embedding(all_dataset, current_best_embedding, current_best_vi
     return current_best_embedding, current_best_violated_constraints
 
 
-def llcc(idx_constraints, num_points, all_dataset, process_id, class_distribution):
+def llcc(idx_constraints, num_points, all_dataset, process_id):
     """
     Learns a line from the given constraints
     """
     best_embedding = OrderedDict()
     best_violated_constraints = float("inf")
+    num_buckets = int(1 / EPSILON)
+    class_distribution = [1 / num_buckets for _ in range(num_buckets)]
     for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
         point_id = i + process_id * num_points
@@ -283,7 +285,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id, class_distributio
             # Skip iteration if a topological ordering cannot be built
             continue
 
-        num_buckets = int(1 / EPSILON)
+
         buckets = get_buckets(topological_ordered_nodes, num_buckets, class_distribution)
 
         if not buckets[0]:

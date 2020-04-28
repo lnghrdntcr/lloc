@@ -16,7 +16,7 @@ from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_W
 from llcc import feedback_arc_set, build_graph_from_triplet_constraints
 
 
-def format_arguments(points, num_points, cpu_count, class_distribution, use_pagerank=False):
+def format_arguments(points, num_points, cpu_count, use_pagerank=False):
     print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
     arguments = []
@@ -32,7 +32,7 @@ def format_arguments(points, num_points, cpu_count, class_distribution, use_page
         if use_pagerank:
             arguments.append((dp, chunk_size, points.copy(), i, reoriented))
         else:
-            arguments.append((dp, chunk_size, points.copy(), i, class_distribution))
+            arguments.append((dp, chunk_size, points.copy(), i))
 
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
@@ -40,7 +40,7 @@ def format_arguments(points, num_points, cpu_count, class_distribution, use_page
     if use_pagerank:
         arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, reoriented))
     else:
-        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, class_distribution))
+        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
 
     print("done!")
     return arguments
@@ -80,7 +80,9 @@ def save_mnist_image(image_array, label, idx, correlation=False, bucketing=True,
 def save_fec_results(embeddings, image_cache, crop_map, directory=True):
     idx = 0
     for image_index, directory in tqdm(embeddings.items()):
-        url = image_cache[image_index]
+        url = image_cache.get(image_index)
+        if url is None:
+            continue
         response = req.get(url.replace("\"", ""))
         if response.status_code == 200:
             img_file = Image.open(BytesIO(response.content))

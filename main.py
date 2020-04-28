@@ -6,7 +6,7 @@ import numpy as np
 from IPython import embed
 
 from config import SUPPORTED_DATASETS, USE_PAGERANK, MNIST_CONSTRAINT_INCLUSION_PROBABILITY, MNIST_ERROR_RATE, MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON
-from format_dataset import format_mnist_from_labels
+from format_dataset import format_mnist_from_labels, format_google_ds
 from llcc import llcc, pagerank_llcc
 from utils import n_choose_k, setup_results_directories, save_mnist_image, format_arguments, \
     select_bucket_from_embedding_value, map_class_distribution_to_bucket_distribution, save_csv_results
@@ -24,17 +24,14 @@ def main(USE_PAGERANK=USE_PAGERANK):
     cpu_count = multiprocessing.cpu_count()
     process_pool = Pool(cpu_count)
 
-    idx_constraints, reverse_cache, (x, y), class_distribution = format_mnist_from_labels(
-        inclusion_probability=MNIST_CONSTRAINT_INCLUSION_PROBABILITY, error_probability=MNIST_ERROR_RATE, use_distance=True)
+    idx_constraints, reverse_cache, crop_map = format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
 
     num_points = len(reverse_cache)
 
-    bucket_distribution = map_class_distribution_to_bucket_distribution(class_distribution)
+    #bucket_distribution = map_class_distribution_to_bucket_distribution(class_distribution)
 
     process_pool_arguments = format_arguments(idx_constraints, num_points, multiprocessing.cpu_count(),
-                                              bucket_distribution,
                                               use_pagerank=USE_PAGERANK)
-
     responses = process_pool.starmap(llcc_fn, process_pool_arguments)
     for embedding, n_violated_constraints in responses:
         if n_violated_constraints < best_violated_constraints:
@@ -44,16 +41,17 @@ def main(USE_PAGERANK=USE_PAGERANK):
     print(
         f"Best embedding with {best_violated_constraints} errors over {3 * len(idx_constraints)} constraints. Max possible constraints -> {num_points * int(n_choose_k(num_points, 2))} ")
 
-    save_csv_results(EPSILON, best_violated_constraints, 3 * len(idx_constraints), "LLCC", "ABS_DISTANCE", MNIST_DIGIT_EXCLUSION_PROBABILITY, MNIST_ERROR_RATE)
-    # embed()
-    # sorted_embedding = [(int(k), v) for k, v in sorted(best_embedding.items(), key=lambda x: x[1])]
-    # for i, (el, value) in enumerate(sorted_embedding):
-    #     index = str(el)
-    #     photo = x[el]
-    #
-    #     bucket = select_bucket_from_embedding_value(value, class_distribution)
-    #
-    #     save_mnist_image(photo, index, 0, image_name=i, bucketing=False)
+
+    embed()
+    #save_csv_results(EPSILON, best_violated_constraints, 3 * len(idx_constraints), "LLCC", "DIGIT_DISTANCE", MNIST_DIGIT_EXCLUSION_PROBABILITY, MNIST_ERROR_RATE)
+    sorted_embedding = [(int(k), v) for k, v in sorted(best_embedding.items(), key=lambda x: x[1])]
+    for i, (el, value) in enumerate(sorted_embedding):
+        index = str(el)
+        photo = x[el]
+
+        bucket = select_bucket_from_embedding_value(value, class_distribution)
+
+        save_mnist_image(photo, index, 0, image_name=i, bucketing=False)
 
     process_pool.close()
 
@@ -62,7 +60,6 @@ def main(USE_PAGERANK=USE_PAGERANK):
 
 
 if __name__ == "__main__":
-
     print(f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
 
     # Build dir structure for the results
