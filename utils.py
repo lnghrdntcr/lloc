@@ -186,3 +186,11 @@ def save_csv_results(epsilon, violated_constraints, total_number_constraints, al
     with open("./results/results.csv", "a+") as file:
         file.write(
             f"{epsilon}, {violated_constraints}, {total_number_constraints}, {algo_type}, {constraint_type}, {missing_digits_probability}, {error_probability}\n")
+
+
+def maps_to(embedding, number):
+    ret = []
+    for k,v in embedding.items():
+        if v == number:
+            ret.append(k)
+    return ret

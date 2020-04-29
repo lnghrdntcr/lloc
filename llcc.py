@@ -144,19 +144,15 @@ def format_embedding(base, embedding, mapped_to_representatives, class_distribut
     return ret
 
 
-def count_violated_constraints(embedding, constraints, ignore_missing_values=False):
+def count_violated_constraints(embedding, constraints, constraints_weights, ignore_missing_values=False):
     count = 0
-    for constraint in constraints:
-        #s, t, k = constraint
-        unrolled_constraints = combinations(constraint, 2)
-        for unrolled_constraint in unrolled_constraints:
-            assert len(unrolled_constraint) == 2
-            s, t = unrolled_constraint
-            f_i = embedding.get(str(s))
-            f_j = embedding.get(str(t))
-            #f_k = embedding.get(str(k))
-        if (f_i is not None) and (f_j is not None):
-            count += int(f_i > f_j)
+    for idx, constraint in enumerate(constraints):
+        s, t, k = constraint
+        f_i = embedding.get(str(s))
+        f_j = embedding.get(str(t))
+        f_k = embedding.get(str(k))
+        if (f_i is not None) and (f_j is not None) and (f_k is not None):
+            count += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k)) * constraints_weights[idx]
         elif not ignore_missing_values:
             count += 1
 
@@ -195,10 +191,13 @@ def patch_representative_map_from_all_constraints(representative_map, representa
     ret = representative_map.copy()
     for constraint in all_idxs:
         assert len(constraint) == 3
-        for idx in constraint:
-            if not representative_map.get(str(idx)) and idx not in representatives:
-                # Map to bucket 0 every element missing from the map
-                ret[str(idx)] = 0
+        for point in constraint:
+            if not representative_map.get(str(point)):
+                if point not in representatives:
+                    # Map to bucket 0 every element missing from the map
+                    ret[str(point)] = 0
+                else:
+                    ret[str(point)] = representatives.index(point)
 
     return ret
 
@@ -225,7 +224,7 @@ def build_representative_embedding(buckets):
 
 
 def search_better_embedding(all_dataset, current_best_embedding, current_best_violated_constraints, point_id,
-                            process_id, representatives, representatives_map, class_distribution):
+                            process_id, representatives, representatives_map, class_distribution, constraints_weight):
     local_best_embedding = None
     local_best_violated_constraints = float("inf")
 
@@ -244,9 +243,9 @@ def search_better_embedding(all_dataset, current_best_embedding, current_best_vi
                                           move_pattern=(i, i + 1))
 
         if local_best_violated_constraints == float("inf"):
-            local_best_violated_constraints = count_violated_constraints(local_best_embedding, all_dataset)
+            local_best_violated_constraints = count_violated_constraints(local_best_embedding, all_dataset, constraints_weight)
 
-        next_violated_constraints = count_violated_constraints(next_embedding, all_dataset)
+        next_violated_constraints = count_violated_constraints(next_embedding, all_dataset, constraints_weight)
 
         if local_best_violated_constraints > next_violated_constraints:
             representatives = next_representatives
@@ -264,6 +263,28 @@ def search_better_embedding(all_dataset, current_best_embedding, current_best_vi
 
     return current_best_embedding, current_best_violated_constraints
 
+
+def create_wlcc(representatives_map, all_dataset):
+    new_constraints = dict()
+    weights = []
+    for constraint in all_dataset:
+        i, j, k = constraint
+        mapped_i, mapped_j, mapped_k = representatives_map[str(i)], representatives_map[str(j)], representatives_map[str(k)]
+        if new_constraints.get((mapped_i, mapped_j, mapped_k)) is None:
+            new_constraints[(mapped_i, mapped_j, mapped_k)] = 1
+        else:
+            new_constraints[(mapped_i, mapped_j, mapped_k)] += 1
+
+    for idx, (constraint, count) in enumerate(new_constraints.items()):
+        i, j, j = constraint
+        if np.abs(representatives_map[str(i)] - representatives_map[str(j)]) >= np.abs(representatives_map[str(i)] - representatives_map[str(k)]):
+            weights.append(count)
+        else:
+            weights.append(0)
+
+    new_idx_constraints = [constraint for constraint, count in new_constraints.items()]
+    assert len(new_idx_constraints) == len(weights)
+    return representatives_map, new_idx_constraints, weights
 
 def llcc(idx_constraints, num_points, all_dataset, process_id):
     """
@@ -292,15 +313,18 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
             # Skip iteration if the point had no constraints to begin with
             continue
 
+        # From here I have to build the WLCC instance
         representatives, representatives_map = build_representative_embedding(buckets)
-
         representatives_map = patch_representative_map_from_all_constraints(representatives_map, representatives,
                                                                             all_dataset)
 
-        embedding, violated_constraints = search_better_embedding(all_dataset, best_embedding,
+        representatives_map, projected_constraints, constraints_weights = create_wlcc(representatives_map, all_dataset)
+
+
+        embedding, violated_constraints = search_better_embedding(projected_constraints, best_embedding,
                                                                   best_violated_constraints, point_id, process_id,
                                                                   representatives, representatives_map,
-                                                                  class_distribution)
+                                                                  class_distribution, constraints_weights)
 
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()

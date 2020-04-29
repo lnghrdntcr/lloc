@@ -4,6 +4,10 @@ import numpy as np
 import networkx as nx
 from IPython import embed
 from scipy.sparse import csgraph
+from scipy.spatial.distance import cosine
+
+
+from config import EPSILON, MNIST_ERROR_RATE, MNIST_DIGIT_EXCLUSION_PROBABILITY
 from llcc import count_violated_constraints
 
 from format_dataset import format_mnist_from_labels
@@ -19,10 +23,26 @@ from format_dataset import format_mnist_from_labels
 # Used csgraph.laplacian to get Laplacian matrix
 
 if __name__ == "__main__":
+    print(f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
 
-    idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels()
+    idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels(use_distance=False)
     G = nx.DiGraph()
-    for constraint in idx_constraints:
+    similarity_matrix = np.zeros((len(x), len(x)))
+    new_constraints = []
+    for i in range(len(x)):
+        for j in range(len(x)):
+            similarity_matrix[i, j] = 1 - cosine(x[i], x[j])
+
+    for i in range(len(x)):
+        for j in range(len(x)):
+            for k in range(len(x)):
+                if i == j or i == k or j == k:
+                    continue
+
+                if similarity_matrix[i, j] > similarity_matrix[i, k]:
+                    new_constraints.append([i, j, k])
+
+    for constraint in new_constraints:
         edges = combinations(constraint, 2)
         for u, v in edges:
             G.add_edge(u, v)
