@@ -121,7 +121,6 @@ def read_mnist():
         new_x_test.append(x_test[idx])
         new_y_test.append(y_test[idx])
 
-    # Test against pagerank
     sliced_y_test = []
     for digit in new_y_test:
         digit_class = np.argmax(digit)

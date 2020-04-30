@@ -295,33 +295,3 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
 
     return best_embedding, best_violated_constraints
 
-
-def build_graph_from_triplet_constraints(idx_constraints):
-    G = nx.DiGraph()
-
-    for constraint in idx_constraints:
-        edges = combinations(constraint, 2)
-        for edge in edges:
-            G.add_edge(edge[0], edge[1])
-
-    return G.copy()
-
-
-def pagerank_llcc(_, num_points, all_dataset, process_id, G):
-    best_embedding = OrderedDict()
-    best_violated_constraints = float("inf")
-
-    for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points    "):
-        point_id = i + process_id * num_points
-
-        pr = nx.pagerank(G, personalization={point_id: 1})
-
-        sorted_pr = [str(k) for k, _ in sorted(pr.items(), key=lambda x: x[1])]
-        embedding = dict([(v, i) for i, v in enumerate(sorted_pr)])
-        violated_constraints = count_violated_constraints(embedding, all_dataset)
-
-        if violated_constraints < best_violated_constraints:
-            best_embedding = embedding
-            best_violated_constraints = violated_constraints
-
-    return best_embedding, best_violated_constraints

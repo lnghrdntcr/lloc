@@ -10,7 +10,6 @@ MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1
 MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.0
 MNIST_ERROR_RATE                       = 0.0
 MNIST_BUCKETS_BASE_WIDTH               = 0.0
-USE_PAGERANK                           = False
 USE_MULTIPROCESS                       = False
 USE_DISTANCE                           = True
 SUPPORTED_DATASETS                     = ["mnist"]

@@ -4,6 +4,7 @@ from math import factorial
 from math import floor
 from os import path
 from os import system, mkdir
+from random import random as rand
 from time import time
 
 import networkx as nx
@@ -13,34 +14,22 @@ from PIL import Image
 from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
-from llcc import feedback_arc_set, build_graph_from_triplet_constraints
-from random import random as rand
 
-def format_arguments(points, num_points, cpu_count, use_pagerank=False):
+
+def format_arguments(points, num_points, cpu_count):
     print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
     arguments = []
 
-    if use_pagerank:
-        G = build_graph_from_triplet_constraints(points)
-        print("\nPrecomputing Graph...")
-        reoriented = feedback_arc_set(G)
-
     for i in range(cpu_count - 1):
         projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
         dp = list(projected_datapoints)
-        if use_pagerank:
-            arguments.append((dp, chunk_size, points.copy(), i, reoriented))
-        else:
-            arguments.append((dp, chunk_size, points.copy(), i))
+        arguments.append((dp, chunk_size, points.copy(), i))
 
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
 
-    if use_pagerank:
-        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, reoriented))
-    else:
-        arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
+    arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
 
     print("done!")
     return arguments
@@ -94,10 +83,8 @@ def save_fec_results(embeddings, image_cache, crop_map, directory=True):
             top_left_row = w * float(tlr)
             bottom_right_row = w * float(brr)
             face = img_file.crop((top_left_col, top_left_row, bottom_right_col, bottom_right_row))
-            # if directory:
-            #    face.save(f"./results/FEC/{directory}/{image_index}.jpg")
-            # else:
-            face.save(f"./results/FEC/pagerank/{idx}.jpg")
+            if directory:
+               face.save(f"./results/FEC/{directory}/{image_index}.jpg")
             idx += 1
 
 
@@ -116,8 +103,6 @@ def setup_results_directories(dataset):
     for i in range(int(1 / EPSILON) + 1):
         mkdir(f"./results/{dataset}/{i}", )
 
-    # For pagerank version
-    mkdir(f"./results/{dataset}/pagerank")
     mkdir(f"./results/{dataset}/new_algo")
 
 
@@ -190,7 +175,7 @@ def save_csv_results(epsilon, violated_constraints, total_number_constraints, al
 
 def train_test_split(constraints, test_percentage=0.3):
     train = []
-    test  = []
+    test = []
 
     for constraint in constraints:
         if rand() >= test_percentage:
@@ -200,9 +185,10 @@ def train_test_split(constraints, test_percentage=0.3):
 
     return train, test
 
+
 def maps_to(embedding, number):
     ret = []
-    for k,v in embedding.items():
+    for k, v in embedding.items():
         if v == number:
             ret.append(k)
     return ret

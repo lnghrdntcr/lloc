@@ -8,18 +8,12 @@ from tqdm import tqdm
 from config import SUPPORTED_DATASETS, USE_PAGERANK, MNIST_ERROR_RATE, \
     MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON, USE_MULTIPROCESS
 from format_dataset import format_mnist_from_labels
-from llcc import llcc, pagerank_llcc
+from llcc import llcc
 from utils import setup_results_directories, format_arguments, \
     train_test_split
 from IPython import embed
 
-def main(USE_PAGERANK=USE_PAGERANK):
-    if not USE_PAGERANK:
-        print("LLCC")
-        llcc_fn = llcc
-    else:
-        llcc_fn = pagerank_llcc
-
+def main():
     best_embedding = OrderedDict()
     min_cost = float("inf")
 
@@ -36,9 +30,8 @@ def main(USE_PAGERANK=USE_PAGERANK):
     num_points = len(reverse_cache)
     train_constraints, test_constraints = train_test_split(idx_constraints, test_percentage=0.2)
 
-    process_pool_arguments = format_arguments(train_constraints, num_points, cpu_count,
-                                              use_pagerank=USE_PAGERANK)
-    responses = process_pool.starmap(llcc_fn, process_pool_arguments)
+    process_pool_arguments = format_arguments(train_constraints, num_points, cpu_count)
+    responses = process_pool.starmap(llcc, process_pool_arguments)
 
     for embedding, n_violated_constraints in responses:
         if n_violated_constraints < min_cost:
