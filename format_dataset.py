@@ -5,7 +5,7 @@ from struct import unpack
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
-from config import MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY
+from config import USE_DISTANCE, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY
 from IPython import embed
 
 
@@ -137,7 +137,7 @@ def read_mnist():
     return np.array(new_x_test), np.array(sliced_y_test), class_distribution
 
 
-def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_distance=True):
+def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_distance=USE_DISTANCE):
     x_test, y_test, class_distribution = read_mnist()
     constraint_distribution = [0 for _ in range(10)]
     new_dataset = []

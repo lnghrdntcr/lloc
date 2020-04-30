@@ -3,15 +3,16 @@ from os import environ
 EPSILON                                = 1 / 9
 MNIST_ROW_SIZE                         = 28
 MNIST_COL_SIZE                         = 28
-MNIST_SUBSAMPLE_FACTOR                 = 40
+MNIST_SUBSAMPLE_FACTOR                 = 100
 MNIST_MEAN_VALUE_SCALE                 = 1.5
 MNIST_MIN_CORR_COEFF                   = 0.9
 MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1
-MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.5
-MNIST_ERROR_RATE                       = 0.1
-MNIST_BUCKETS_BASE_WIDTH               = 0.1
+MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.1
+MNIST_ERROR_RATE                       = 0.2
+MNIST_BUCKETS_BASE_WIDTH               = 0.0
 USE_PAGERANK                           = False
 USE_MULTIPROCESS                       = True
+USE_DISTANCE                           = True
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False
 GRAPH_NUM_NODES                        = 4000
@@ -24,4 +25,7 @@ if ENVIRON_MNIST_DIGIT_EXCLUSION_PROBABILITY := environ.get("MNIST_DIGIT_EXCLUSI
 
 if ENVIRON_MNIST_ERROR_RATE := environ.get("MNIST_ERROR_RATE"):
     MNIST_ERROR_RATE = float(ENVIRON_MNIST_ERROR_RATE)
+
+if ENVIRON_USE_DISTANCE := environ.get("USE_DISTANCE"):
+    MNIST_ERROR_RATE = bool(int(ENVIRON_USE_DISTANCE))
 

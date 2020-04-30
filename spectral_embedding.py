@@ -25,7 +25,7 @@ from format_dataset import format_mnist_from_labels
 if __name__ == "__main__":
     print(f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
 
-    idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels(use_distance=False)
+    idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels()
     G = nx.DiGraph()
     similarity_matrix = np.zeros((len(x), len(x)))
     new_constraints = []
