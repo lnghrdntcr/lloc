@@ -5,13 +5,14 @@ from multiprocessing import Pool
 
 from tqdm import tqdm
 
-from config import SUPPORTED_DATASETS, USE_PAGERANK, MNIST_ERROR_RATE, \
+from config import SUPPORTED_DATASETS, MNIST_ERROR_RATE, \
     MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON, USE_MULTIPROCESS
 from format_dataset import format_mnist_from_labels
 from llcc import llcc
 from utils import setup_results_directories, format_arguments, \
     train_test_split
 from IPython import embed
+
 
 def main():
     best_embedding = OrderedDict()
@@ -24,8 +25,8 @@ def main():
 
     process_pool = Pool(cpu_count)
 
-    idx_constraints, reverse_cache, (x,
-                                     y), class_distribution = format_mnist_from_labels()  # format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
+    idx_constraints, reverse_cache, (x, y), class_distribution = format_mnist_from_labels()
+                                                               # format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
 
     num_points = len(reverse_cache)
     train_constraints, test_constraints = train_test_split(idx_constraints, test_percentage=0.2)
@@ -44,7 +45,7 @@ def main():
     print(
         f"Best embedding with {min_cost} errors over {3 * len(idx_constraints)} constraints. Precision {100 - min_cost / (3 * len(idx_constraints)) * 100}%.")
     process_pool.close()
-    embed()
+
     error_rate = 0
     missing = 0
     for test_constraint in tqdm(test_constraints, desc="Testing..."):
