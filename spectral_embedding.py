@@ -27,25 +27,30 @@ if __name__ == "__main__":
 
     idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels()
     G = nx.DiGraph()
-    similarity_matrix = np.zeros((len(x), len(x)))
-    new_constraints = []
-    for i in range(len(x)):
-        for j in range(len(x)):
-            similarity_matrix[i, j] = 1 - cosine(x[i], x[j])
 
-    for i in range(len(x)):
-        for j in range(len(x)):
-            for k in range(len(x)):
-                if i == j or i == k or j == k:
-                    continue
-
-                if similarity_matrix[i, j] > similarity_matrix[i, k]:
-                    new_constraints.append([i, j, k])
-
-    for constraint in new_constraints:
-        edges = combinations(constraint, 2)
-        for u, v in edges:
+    for constraint in idx_constraints:
+        for u,v in list(combinations(constraint, 2))[:-1]:
             G.add_edge(u, v)
+
+    # similarity_matrix = np.zeros((len(x), len(x)))
+    # new_constraints = []
+    # for i in range(len(x)):
+    #     for j in range(len(x)):
+    #         similarity_matrix[i, j] = 1 - cosine(x[i], x[j])
+    #
+    # for i in range(len(x)):
+    #     for j in range(len(x)):
+    #         for k in range(len(x)):
+    #             if i == j or i == k or j == k:
+    #                 continue
+    #
+    #             if similarity_matrix[i, j] > similarity_matrix[i, k]:
+    #                 new_constraints.append([i, j, k])
+    #
+    # for constraint in new_constraints:
+    #     edges = combinations(constraint, 2)
+    #     for u, v in edges:
+    #         G.add_edge(u, v)
 
     # Create adjacency matrix in dense format in order to retrieve L in dense format
     M = nx.adjacency_matrix(G).todense()
@@ -62,7 +67,7 @@ if __name__ == "__main__":
         embedding = dict([(v[0], k) for k, v in enumerate(sorted_embedding)])
 
         # Count the violated constraints
-        violated_constraints = count_violated_constraints(embedding, idx_constraints)
+        violated_constraints = count_violated_constraints(embedding, idx_constraints, [1 for _ in range(len(idx_constraints))], use_distance=True)
         print(f"Violated constraints using the {i}th highest eigenvector -> {violated_constraints / len(idx_constraints) * 3}%")
 
     embed()

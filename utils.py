@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
 from llcc import feedback_arc_set, build_graph_from_triplet_constraints
-
+from random import random as rand
 
 def format_arguments(points, num_points, cpu_count, use_pagerank=False):
     print("Formatting arguments...", end="")
@@ -187,6 +187,18 @@ def save_csv_results(epsilon, violated_constraints, total_number_constraints, al
         file.write(
             f"{epsilon}, {violated_constraints}, {total_number_constraints}, {algo_type}, {constraint_type}, {missing_digits_probability}, {error_probability}\n")
 
+
+def train_test_split(constraints, test_percentage=0.3):
+    train = []
+    test  = []
+
+    for constraint in constraints:
+        if rand() >= test_percentage:
+            train.append(constraint)
+        else:
+            test.append(constraint)
+
+    return train, test
 
 def maps_to(embedding, number):
     ret = []
