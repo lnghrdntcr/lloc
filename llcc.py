@@ -39,13 +39,13 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
     return ret
 
 
-def get_buckets(arr, num_buckets, bucketed_class_distribution=None):
+def create_buckets(arr, num_buckets, bucketed_class_distribution=None):
     """
     Creates the buckets with respect to a given class distribution
     :param arr: Elements to be partitioned in subsets
     :param num_buckets: Number of subsets
     :param bucketed_class_distribution: Distribution of elements in the subsets
-    :return:
+    :return: all the points in the arr list divided into `num_buckets` buckets
     """
     buckets = []
 
@@ -62,21 +62,21 @@ def get_buckets(arr, num_buckets, bucketed_class_distribution=None):
     return buckets
 
 
-def format_embedding(base, representatives, mapped_to_representatives, move_pattern=None):
+def format_embedding(base_point, representatives, mapped_to_representatives, move_pattern=None):
     """
     Creates the initial embedding in which all elements are mapped to their representative in the bucket
     and the representatives are mapped to their index in the array
-    :param base: The point to be mapped to 0
+    :param base_point: The point to be mapped to 0
     :param representatives: The representative points
     :param mapped_to_representatives: Points in the buckets
     :param move_pattern: Swap representatives
     :return: An embedding
     """
     ret = OrderedDict()
-    ret[str(base)] = 0
+    ret[base_point] = 0
 
     for i, el in enumerate(representatives):
-        ret[str(el)] = i + 1
+        ret[el] = i + 1
 
     for key, maps_to in list(ret.items()):
         # get all_elements that are mapped to `maps_to`
@@ -94,31 +94,32 @@ def format_embedding(base, representatives, mapped_to_representatives, move_patt
                 new_maps_to = maps_to
 
             position = new_maps_to
-            ret[str(key)] = position
+            ret[key] = position
 
     return ret
 
 
-def count_violated_constraints(embedding, constraints, representatives, constraints_weights, ignore_missing_values=False,
+def count_violated_constraints(embedding, constraints, representatives, constraints_weights,
+                               ignore_missing_values=False,
                                use_distance=USE_DISTANCE):
     count = 0
     for idx, constraint in enumerate(constraints):
         if use_distance:
             s, t, k = constraint
-            f_i = embedding.get(str(representatives[s - 1]))
-            f_j = embedding.get(str(representatives[t - 1]))
-            f_k = embedding.get(str(representatives[k - 1]))
+            f_i = embedding.get(representatives[s])
+            f_j = embedding.get(representatives[t])
+            f_k = embedding.get(representatives[k])
             if (f_i is not None) and (f_j is not None) and (f_k is not None):
                 count += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k)) * constraints_weights[idx]
             elif not ignore_missing_values:
                 count += 1
         else:
-            constraints_combinations = combinations(constraints, 2)
+            constraints_combinations = combinations(constraint, 2)
 
             for c in constraints_combinations:
                 s, t = c
-                f_i = embedding.get(str(representatives[s - 1]))
-                f_j = embedding.get(str(representatives[t - 1]))
+                f_i = embedding.get(representatives[s])
+                f_j = embedding.get(representatives[t])
                 if (f_i is not None) and (f_j is not None):
                     count += int(f_i >= f_j) * constraints_weights[idx]
                 elif not ignore_missing_values:
@@ -131,7 +132,7 @@ def build_graph_from_constraints(constraints, cur_vertex):
     Builds the tournament from the given constraints
     :param cur_vertex: The vertex to consider as first point
     :param constraints: Triplet Constraints
-    :return: The built turnament
+    :return: The built tournament
     """
     G = nx.DiGraph()
     edges = list(map(lambda x: (x[1], x[2]), constraints))
@@ -141,87 +142,110 @@ def build_graph_from_constraints(constraints, cur_vertex):
     return G
 
 
-def patch_embedding_from_all_constraints(representative_map, representatives, constraints):
+def patch_embedding_from_all_constraints(base_embedding, representatives, constraints):
     """
     Maps every point that's missing in the embedding to 0
-    :param representative_map: 
+    :param base_embedding: 
     :param representatives: 
     :param constraints: 
-    :return: 
+    :return: An embedding that contains all the points
     """
-    ret = representative_map.copy()
+    ret = base_embedding.copy()
     for constraint in constraints:
-        assert len(constraint) == 3
         for point in constraint:
-            if not representative_map.get(str(point)):
+            if not base_embedding.get(point):
                 if point not in representatives:
                     # Map to bucket 0 every element missing from the map
-                    ret[str(point)] = 0
-                else:
-                    ret[str(point)] = representatives.index(point) + 1
+                    ret[point] = 0
 
     return ret
 
 
-def build_representative_embedding(buckets):
-    representatives = []
-    embedding = OrderedDict()
+def build_representative_embedding(base_point, buckets):
+    """
+    Chooses the representatives for each bucket and maps every point in that bucket to the index of that bucket + 1
+    :param base_point: The point that gets mapped to bucket 0
+    :param buckets:
+    :return: An embedding
+    """
+    representatives = [base_point]
+    embedding = OrderedDict([(base_point, 0)])
 
     for idx, bucket in enumerate(buckets):
         representatives.append(random.choice(bucket))
 
         for el in bucket:
-            if el != representatives[idx]:
-                embedding[str(el)] = idx + 1
+            # Since `base_point` is already mapped to 0
+            if el != base_point:
+                embedding[el] = idx + 1
 
     return representatives, embedding
 
 
-def search_better_embedding(all_dataset, current_best_embedding, current_best_violated_constraints, point_id,
-                            representatives, representatives_map, constraints_weight, process_id, num_points = 0):
-    local_best_embedding = None
-    local_best_violated_constraints = float("inf")
+def rename_constraints(constraints, first_token, second_token):
+    new_constraints = []
+
+    for i, constraint in enumerate(constraints):
+        new_constraint = [*constraint]
+        for j, point in enumerate(new_constraint):
+            if point == first_token:
+                new_constraint[j] = second_token
+            elif point == second_token:
+                new_constraint[j] = first_token
+        new_constraints.append(new_constraint)
+
+    return new_constraints
+
+
+def search_better_embedding(dataset, best_embedding, best_weight_violated_constraints, base_point,
+                            representatives, base_embedding, base_weight_violated_constraints, constraints_weight,
+                            process_id=0):
+
+    # Create reference embedding
+    local_best_embedding = base_embedding
+    local_best_weight = base_weight_violated_constraints
+    local_constraints = dataset
 
     for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1, leave=False,
                   desc=f"[Core {process_id}] Embeddings "):
+        # Swap contiguous pairs of representatives
         next_representatives = representatives.copy()
         next_representatives[i], next_representatives[i + 1] = next_representatives[i + 1], next_representatives[i]
 
-        tmp_representative_map = dict([(k, v) for k, v in representatives_map.items() if int(k) not in representatives])
-        if local_best_embedding is None:
-            local_best_embedding = format_embedding(point_id, representatives, tmp_representative_map)
+        # Create the next embedding from the swapped representatives and the previous best embedding
+        next_embedding = format_embedding(base_point, next_representatives, local_best_embedding,
+                                          move_pattern=(i, i + 1))
 
-        next_embedding = format_embedding(point_id, next_representatives, tmp_representative_map, move_pattern=(i, i + 1))
+        next_constraints = rename_constraints(local_constraints, i, i + 1)
+        next_weight = count_violated_constraints(next_embedding, next_constraints, next_representatives,
+                                                 constraints_weight)
 
-        if local_best_violated_constraints == float("inf"):
-            local_best_violated_constraints = count_violated_constraints(local_best_embedding, all_dataset, representatives,
-                                                                         constraints_weight)
+        if local_best_weight > next_weight:
+            representatives      = next_representatives.copy()
+            local_best_embedding = next_embedding
+            local_best_weight    = next_weight
+            local_constraints    = next_constraints
 
-        next_violated_constraints = count_violated_constraints(next_embedding, all_dataset, next_representatives, constraints_weight)
+    if best_weight_violated_constraints > local_best_weight:
+        return local_best_embedding, representatives, local_best_weight
 
-        if local_best_violated_constraints > next_violated_constraints:
-            representatives = next_representatives
-            representatives_map = dict([(k, v) for k, v in next_embedding.items() if int(k) not in representatives])
-            local_best_embedding = next_embedding.copy()
-            local_best_violated_constraints = next_violated_constraints
-
-    embedding = local_best_embedding.copy()
-    violated_constraints = local_best_violated_constraints
-
-    if violated_constraints < current_best_violated_constraints:
-        current_best_embedding = embedding
-        current_best_violated_constraints = violated_constraints
-
-    return current_best_embedding, representatives, current_best_violated_constraints
+    return best_embedding, representatives, best_weight_violated_constraints
 
 
-def create_wlcc(representatives_map, all_dataset, use_distance=USE_DISTANCE):
+def create_wlcc(embedding, dataset, use_distance=USE_DISTANCE):
+    """
+    Creates a WLCC instance
+    :param embedding: 
+    :param dataset: 
+    :param use_distance: 
+    :return: 
+    """
     new_constraints = dict()
     weights = []
-    for constraint in all_dataset:
+    for constraint in dataset:
         i, j, k = constraint
-        mapped_i, mapped_j, mapped_k = representatives_map[str(i)], representatives_map[str(j)], representatives_map[
-            str(k)]
+        mapped_i, mapped_j, mapped_k = embedding[i], embedding[j], embedding[k]
+
         if new_constraints.get((mapped_i, mapped_j, mapped_k)) is None:
             new_constraints[(mapped_i, mapped_j, mapped_k)] = 1
         else:
@@ -233,21 +257,21 @@ def create_wlcc(representatives_map, all_dataset, use_distance=USE_DISTANCE):
             acc = 0
             for c in constraint_combinations:
                 i, j = c
-                if representatives_map[str(i)] >= representatives_map[str(j)]:
+                if embedding[i] >= embedding[j]:
                     acc += 1
 
             weights.append(count * acc)
 
         else:
-            i, j, j = constraint
-            if np.abs(representatives_map[str(i)] - representatives_map[str(j)]) >= np.abs(
-                    representatives_map[str(i)] - representatives_map[str(k)]):
+            i, j, k = constraint
+            if np.abs(embedding[i] - embedding[j]) >= np.abs(
+                    embedding[i] - embedding[k]):
                 weights.append(count)
             else:
                 weights.append(0)
 
     new_idx_constraints = [constraint for constraint, count in new_constraints.items()]
-    return representatives_map, new_idx_constraints, weights
+    return embedding, new_idx_constraints, weights
 
 
 def llcc(idx_constraints, num_points, all_dataset, process_id):
@@ -257,11 +281,12 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
     best_embedding = None
     best_violated_constraints = float("inf")
     num_buckets = int(1 / EPSILON)
+
     for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
-        point_id = i + process_id * num_points
-        constraints = list(filter(lambda x: x[0] == point_id, idx_constraints))
-        G = build_graph_from_constraints(constraints, point_id)
+        base_point = i + process_id * num_points
+        constraints = list(filter(lambda x: x[0] == base_point, idx_constraints))
+        G = build_graph_from_constraints(constraints, base_point)
         reoriented = feedback_arc_set(G, process_id=process_id)
         try:
             topological_ordered_nodes = list(nx.topological_sort(reoriented))
@@ -269,29 +294,29 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
             # Skip iteration if a topological ordering cannot be built
             continue
 
-        buckets = get_buckets(topological_ordered_nodes, num_buckets)
+        buckets = create_buckets(topological_ordered_nodes, num_buckets)
 
         if not buckets[0]:
             # Skip iteration if the point had no constraints to begin with
             continue
 
         # From here I have to build the WLCC instance
-        representatives, base_embedding = build_representative_embedding(buckets)
+        representatives, base_embedding = build_representative_embedding(base_point, buckets)
         base_embedding = patch_embedding_from_all_constraints(base_embedding, representatives,
                                                               all_dataset)
 
         base_embedding, projected_constraints, constraints_weights = create_wlcc(base_embedding, all_dataset)
+        base_weight_violated_constraints = count_violated_constraints(base_embedding, projected_constraints,
+                                                                      representatives, constraints_weights)
 
-        embedding, new_representatives, _ = search_better_embedding(projected_constraints, best_embedding,
-                                                                  best_violated_constraints, point_id,
-                                                                  representatives, base_embedding,
-                                                                  constraints_weights, process_id, num_points=num_points)
+        embedding, new_representatives, violated_constraints = search_better_embedding(projected_constraints, best_embedding,
+                                                                    best_violated_constraints, base_point,
+                                                                    representatives, base_embedding,
+                                                                    base_weight_violated_constraints,
+                                                                    constraints_weights, process_id=process_id)
 
-        embedding = patch_embedding_from_all_constraints(embedding, new_representatives, all_dataset)
-        violated_constraints = count_violated_constraints(embedding, projected_constraints, new_representatives, constraints_weights)
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
             best_violated_constraints = violated_constraints
 
     return best_embedding, best_violated_constraints
-

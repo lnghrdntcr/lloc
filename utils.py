@@ -17,6 +17,13 @@ from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_W
 
 
 def format_arguments(points, num_points, cpu_count):
+    """
+    Formats the arguments into tuples to be fed to different processes
+    :param points:
+    :param num_points:
+    :param cpu_count:
+    :return:
+    """
     print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
     arguments = []

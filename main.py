@@ -6,12 +6,12 @@ from multiprocessing import Pool
 from tqdm import tqdm
 
 from config import SUPPORTED_DATASETS, MNIST_ERROR_RATE, \
-    MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON, USE_MULTIPROCESS
+    MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON, USE_MULTIPROCESS, USE_DISTANCE
 from format_dataset import format_mnist_from_labels
 from llcc import llcc
 from utils import setup_results_directories, format_arguments, \
     train_test_split
-from IPython import embed
+import numpy as np
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
                                                                # format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
 
     num_points = len(reverse_cache)
-    train_constraints, test_constraints = train_test_split(idx_constraints, test_percentage=0.2)
+    train_constraints, test_constraints = train_test_split(idx_constraints, test_percentage=0.3)
 
     process_pool_arguments = format_arguments(train_constraints, num_points, cpu_count)
     responses = process_pool.starmap(llcc, process_pool_arguments)
@@ -51,15 +51,25 @@ def main():
     for test_constraint in tqdm(test_constraints, desc="Testing..."):
         train_constraints.append(test_constraint)
         new_cost = 0
-        for i, j in list(combinations(test_constraint, 2))[:-1]:
-            if ((f_i := best_embedding.get(str(i))) is not None) and ((f_j := best_embedding.get(str(j))) is not None):
-                new_cost += int(f_i > f_j)
-            else:
-                missing += 1
-                new_cost += 1
 
-        if new_cost != 0:
-            error_rate += 1
+        if USE_DISTANCE:
+            i, j, k = test_constraint
+            if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None) and ((f_k := best_embedding.get(k)) is not None):
+                new_cost += int(np.abs(f_i - f_j) > np.abs(f_i - f_k))
+            else:
+                new_cost += 1
+                missing  += 1
+        else:
+            for i, j in list(combinations(test_constraint, 2))[:-1]:
+
+                if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None):
+                    new_cost += int(f_i > f_j)
+                else:
+                    missing  += 1
+                    new_cost += 1
+
+            if new_cost != 0:
+                error_rate += 1
 
         del train_constraints[-1]
 
