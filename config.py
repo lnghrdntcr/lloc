@@ -1,9 +1,10 @@
 from os import environ
 
 EPSILON                                = 1 / 9
+
 MNIST_ROW_SIZE                         = 28
 MNIST_COL_SIZE                         = 28
-MNIST_SUBSAMPLE_FACTOR                 = 40
+MNIST_SUBSAMPLE_FACTOR                 = 100
 MNIST_MEAN_VALUE_SCALE                 = 1.5
 MNIST_MIN_CORR_COEFF                   = 0.9
 MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1

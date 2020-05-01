@@ -39,11 +39,6 @@ def main():
             best_embedding = embedding
             min_cost = n_violated_constraints
 
-    # FIXME: This line outputs an accuracy much worse than what's real because min_cost is now a cost and not a
-    # count of violated constraints
-    # Still indicative tho
-    print(
-        f"Best embedding with {min_cost} errors over {3 * len(idx_constraints)} constraints. Precision {100 - min_cost / (3 * len(idx_constraints)) * 100}%.")
     process_pool.close()
 
     error_rate = 0
@@ -59,6 +54,9 @@ def main():
             else:
                 new_cost += 1
                 missing  += 1
+
+            if new_cost != 0:
+                error_rate += 1
         else:
             for i, j in list(combinations(test_constraint, 2))[:-1]:
 
@@ -73,16 +71,13 @@ def main():
 
         del train_constraints[-1]
 
-    print(f"Error Percentage: {(error_rate / len(test_constraints)) * 100}%")
-    print(f"Missing {missing}")
-
-    print("DONE! Exiting...")
+    print(f"Accuracy: {100 - (error_rate / len(test_constraints)) * 100}%")
     exit(0)
 
 
 if __name__ == "__main__":
-    print(
-        f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
+    # print(
+    #     f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
 
     # Build dir structure for the results
     for ds in SUPPORTED_DATASETS:

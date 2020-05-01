@@ -102,7 +102,7 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
 def count_violated_constraints(embedding, constraints, representatives, constraints_weights,
                                ignore_missing_values=False,
                                use_distance=USE_DISTANCE):
-    count = 0
+    weight = 0
     for idx, constraint in enumerate(constraints):
         if use_distance:
             s, t, k = constraint
@@ -110,9 +110,9 @@ def count_violated_constraints(embedding, constraints, representatives, constrai
             f_j = embedding.get(representatives[t])
             f_k = embedding.get(representatives[k])
             if (f_i is not None) and (f_j is not None) and (f_k is not None):
-                count += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k)) * constraints_weights[idx]
+                weight += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k)) * constraints_weights[idx]
             elif not ignore_missing_values:
-                count += 1
+                weight += 1
         else:
             constraints_combinations = combinations(constraint, 2)
 
@@ -121,10 +121,10 @@ def count_violated_constraints(embedding, constraints, representatives, constrai
                 f_i = embedding.get(representatives[s])
                 f_j = embedding.get(representatives[t])
                 if (f_i is not None) and (f_j is not None):
-                    count += int(f_i >= f_j) * constraints_weights[idx]
+                    weight += int(f_i >= f_j) * constraints_weights[idx]
                 elif not ignore_missing_values:
-                    count += 1
-    return count
+                    weight += 1
+    return weight
 
 
 def build_graph_from_constraints(constraints, cur_vertex):
