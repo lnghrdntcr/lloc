@@ -5,8 +5,11 @@ from struct import unpack
 from tqdm import tqdm
 import numpy as np
 from PIL import Image
-from config import USE_DISTANCE, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY
+from config import USE_DISTANCE, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, \
+    MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY, STE_NUM_DIGITS, ROE_SAMPLES, CONTAMINATION_PERCENTAGE, \
+    BAR_POSITION_OFFSET
 from IPython import embed
+from random import sample, choice
 
 
 class TripletType(Enum):
@@ -72,7 +75,7 @@ def read_x_mnist(x_path, normalize=True):
         n_cols = readInt32(f.read(4))
         x = []
 
-        for i in tqdm(range(n_samples), desc="[MNIST] Read values"):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read values", position=BAR_POSITION_OFFSET + 1):
             image = []
             for j in range(n_rows * n_cols):
                 image.append(readInt8(f.read(1)))
@@ -93,7 +96,7 @@ def read_y_mnist(y_path):
         n_samples = readInt32(f.read(4))
 
         y = []
-        for i in tqdm(range(n_samples), desc="[MNIST] Read labels"):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read labels", position=BAR_POSITION_OFFSET + 1):
             idx = readInt8(f.read(1))
             y.append([0 for i in range(10)])
             y[i][idx] = 1
@@ -101,7 +104,7 @@ def read_y_mnist(y_path):
         return y
 
 
-def read_mnist():
+def read_mnist(subsample=True):
     class_distribution = [0 for _ in range(10)]
     real_class_distribution = class_distribution.copy()
     # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
@@ -111,8 +114,11 @@ def read_mnist():
     y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
 
     indices = set()
-    for _ in range(int(len(x_test) / MNIST_SUBSAMPLE_FACTOR)):
-        indices.add(randint(0, len(x_test)))
+    if subsample:
+        for _ in range(int(len(x_test) / MNIST_SUBSAMPLE_FACTOR)):
+            indices.add(randint(0, len(x_test)))
+    else:
+        indices = set([i for i in range(len(x_test))])
 
     new_x_test = []
     new_y_test = []
@@ -121,25 +127,87 @@ def read_mnist():
         new_x_test.append(x_test[idx])
         new_y_test.append(y_test[idx])
 
-    sliced_y_test = []
-    for digit in new_y_test:
-        digit_class = np.argmax(digit)
-        real_class_distribution[digit_class] += 1
-        if digit_class < 5 and rand() < MNIST_DIGIT_EXCLUSION_PROBABILITY:
-            continue
-        else:
-            sliced_y_test.append(digit)
-            class_distribution[int(digit_class)] += 1
+    return np.array(new_x_test), np.array(new_y_test), class_distribution
 
-    class_distribution = [el / len(sliced_y_test) for el in class_distribution]
+def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE):
+    dataset = [np.random.rand(1, 10) for _ in range(ROE_SAMPLES)]
+    distance_matrix = np.zeros((len(dataset), len(dataset)))
+    constraints = []
 
-    return np.array(new_x_test), np.array(sliced_y_test), class_distribution
+    for i in tqdm(range(len(dataset)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1):
+        for j in range(len(dataset)):
+            distance_matrix[i, j] = np.linalg.norm(dataset[i] - dataset[j], ord=2)
+
+    for i in tqdm(range(len(dataset)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2):
+
+        # Take 50 Nearest neighbours
+        indexed_digits  = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+        closest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1])][:50]
+
+        for close_index in closest_indices:
+            # take the 50 farthest neighbors
+            indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+            farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
+
+            for far_index in farthest_indices:
+                next = [close_index, far_index]
+                if rand() >= contamination_percentage:
+                    constraints.append([i, *next])
+                else:
+                    constraints.append([i, *np.random.permutation(next)])
+    subsampled_constraints = sample(constraints, 2 * ROE_SAMPLES ** 2 // 100)
+
+    return subsampled_constraints, ROE_SAMPLES
+
+def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAGE):
+    """
+    This dataset creation complies to the metodology used in
+    STOCHASTIC TRIPLET EMBEDDING -> https://lvdmaaten.github.io/ste/Stochastic_Triplet_Embedding_files/PID2449611.pdf
+    :return:
+    """
+    x_test, y_test, class_distribution = read_mnist(subsample=False)
+
+    constraints = []
+
+    # Subsample STE_NUM_DIGITS digits
+    subsample_idxs    = sample(range(len(list(x_test))), STE_NUM_DIGITS)
+    subsampled_x      = [x_test[idx] for idx in subsample_idxs]
+    subsampled_labels = dict([(i, np.argmax(y_test[digit_idx])) for i, digit_idx in enumerate(subsample_idxs)])
+
+    # create distance matrix
+    distance_matrix = np.zeros((STE_NUM_DIGITS, STE_NUM_DIGITS))
+
+    for i in tqdm(range(len(subsampled_x)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1):
+        for j in range(len(subsampled_x)):
+            distance_matrix[i, j] = np.linalg.norm(subsampled_x[i] - subsampled_x[j], ord=2)
+
+    for i in tqdm(range(len(subsampled_x)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2):
+
+        # Take 50 Nearest neighbours
+        indexed_digits  = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+        closest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1])][:50]
+
+        for close_index in closest_indices:
+            # take the 50 farthest neighbors
+            indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+            farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
+
+            for far_index in farthest_indices:
+                next = [close_index, far_index]
+                if rand() >= contamination_percentage:
+                    constraints.append([i, *next])
+                else:
+                    constraints.append([i, *np.random.permutation(next)])
+
+    # Subsample again reduce the number of constraints constraints
+    subsampled_constraints = sample(constraints, STE_NUM_DIGITS ** 2 // 10)
+    return subsampled_constraints, STE_NUM_DIGITS
 
 
 def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_distance=USE_DISTANCE):
     x_test, y_test, class_distribution = read_mnist()
     constraint_distribution = [0 for _ in range(10)]
-    new_dataset = []
+    constraints = []
     idx_map = {}
     error_count = 0
     # do it on y_test, because is smaller
@@ -157,9 +225,9 @@ def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_d
                         idx_map[str(idx3)] = label3
 
                         if rand() < (1 - error_probability):
-                            new_dataset.append([idx, idx2, idx3])
+                            constraints.append([idx, idx2, idx3])
                         else:
-                            new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
+                            constraints.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
                             error_count += 1
         else:
             for idx2, y_2 in enumerate(y_test):
@@ -176,13 +244,13 @@ def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_d
                                 idx_map[str(idx3)] = label3
 
                                 if rand() < (1 - error_probability):
-                                    new_dataset.append([idx, idx2, idx3])
+                                    constraints.append([idx, idx2, idx3])
                                 else:
-                                    new_dataset.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
+                                    constraints.append(np.random.choice([idx, idx2, idx3], 3, replace=False))
                                     error_count += 1
 
     print(f"Constraints distribution per digit -> {constraint_distribution}\nTotal number of constraints -> {sum(constraint_distribution)}")
-    return new_dataset, idx_map, (x_test, y_test), class_distribution
+    return constraints, idx_map, (x_test, y_test), class_distribution
 
 
 def format_mnist_from_correlations():

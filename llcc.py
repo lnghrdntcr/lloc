@@ -6,7 +6,7 @@ import networkx as nx
 import numpy as np
 from tqdm import tqdm
 
-from config import EPSILON, USE_DISTANCE
+from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
@@ -17,7 +17,8 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
     :return: A DAG
     """
     ret = G.copy()
-    for node in tqdm(ret.nodes, position=process_id * 2 + 1, leave=False, desc=f"[Core {process_id}] FAS        "):
+    for node in tqdm(ret.nodes, position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
+                     desc=f"[Core {process_id}] FAS        "):
         in_edges = ret.in_edges(node)
         neighbouring_nodes = list(map(lambda x: x[0] if x[1] == node else x[1], in_edges))
 
@@ -200,13 +201,12 @@ def rename_constraints(constraints, first_token, second_token):
 def search_better_embedding(dataset, best_embedding, best_weight_violated_constraints, base_point,
                             representatives, base_embedding, base_weight_violated_constraints, constraints_weight,
                             process_id=0):
-
     # Create reference embedding
     local_best_embedding = base_embedding
     local_best_weight = base_weight_violated_constraints
     local_constraints = dataset
 
-    for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1, leave=False,
+    for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
                   desc=f"[Core {process_id}] Embeddings "):
         # Swap contiguous pairs of representatives
         next_representatives = representatives.copy()
@@ -221,10 +221,10 @@ def search_better_embedding(dataset, best_embedding, best_weight_violated_constr
                                                  constraints_weight)
 
         if local_best_weight > next_weight:
-            representatives      = next_representatives.copy()
+            representatives = next_representatives.copy()
             local_best_embedding = next_embedding
-            local_best_weight    = next_weight
-            local_constraints    = next_constraints
+            local_best_weight = next_weight
+            local_constraints = next_constraints
 
     if best_weight_violated_constraints > local_best_weight:
         return local_best_embedding, representatives, local_best_weight
@@ -282,7 +282,8 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
     best_violated_constraints = float("inf")
     num_buckets = int(1 / EPSILON)
 
-    for i in tqdm(range(num_points), position=process_id * 2, leave=False, desc=f"[Core {process_id}] Points     "):
+    for i in tqdm(range(num_points), position=process_id * 2 + BAR_POSITION_OFFSET, leave=False,
+                  desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
         base_point = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == base_point, idx_constraints))
@@ -309,11 +310,14 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         base_weight_violated_constraints = count_violated_constraints(base_embedding, projected_constraints,
                                                                       representatives, constraints_weights)
 
-        embedding, new_representatives, violated_constraints = search_better_embedding(projected_constraints, best_embedding,
-                                                                    best_violated_constraints, base_point,
-                                                                    representatives, base_embedding,
-                                                                    base_weight_violated_constraints,
-                                                                    constraints_weights, process_id=process_id)
+        embedding, new_representatives, violated_constraints = search_better_embedding(projected_constraints,
+                                                                                       best_embedding,
+                                                                                       best_violated_constraints,
+                                                                                       base_point,
+                                                                                       representatives, base_embedding,
+                                                                                       base_weight_violated_constraints,
+                                                                                       constraints_weights,
+                                                                                       process_id=process_id)
 
         if violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()

@@ -1,20 +1,21 @@
 import multiprocessing
+import sys
 from collections import OrderedDict
 from itertools import combinations
 from multiprocessing import Pool
 
+import numpy as np
 from tqdm import tqdm
 
-from config import SUPPORTED_DATASETS, MNIST_ERROR_RATE, \
-    MNIST_DIGIT_EXCLUSION_PROBABILITY, EPSILON, USE_MULTIPROCESS, USE_DISTANCE
-from format_dataset import format_mnist_from_labels
+from config import SUPPORTED_DATASETS, USE_MULTIPROCESS, USE_DISTANCE, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
+    EPSILON, TRAIN_TEST_SPLIT_RATE
+from format_dataset import create_random_dataset, format_mnist_from_distances
 from llcc import llcc
 from utils import setup_results_directories, format_arguments, \
     train_test_split
-import numpy as np
 
 
-def main():
+def main(dataset_name):
     best_embedding = OrderedDict()
     min_cost = float("inf")
 
@@ -25,12 +26,15 @@ def main():
 
     process_pool = Pool(cpu_count)
 
-    idx_constraints, reverse_cache, (x, y), class_distribution = format_mnist_from_labels()
-                                                               # format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
+    # idx_constraints, reverse_cache, (x, y), _ = format_mnist_from_labels()
+    # format_google_ds("./datasets/FEC_dataset/faceexp-comparison-data-train-public.csv", smart_constraints=False, early_stop_count=10000)
 
-    num_points = len(reverse_cache)
-    train_constraints, test_constraints = train_test_split(idx_constraints, test_percentage=0.3)
+    if USE_MNIST:
+        constraints, num_points = format_mnist_from_distances()
+    elif USE_RANDOM:
+        constraints, num_points = create_random_dataset()
 
+    train_constraints, test_constraints = train_test_split(constraints, test_percentage=TRAIN_TEST_SPLIT_RATE)
     process_pool_arguments = format_arguments(train_constraints, num_points, cpu_count)
     responses = process_pool.starmap(llcc, process_pool_arguments)
 
@@ -49,11 +53,12 @@ def main():
 
         if USE_DISTANCE:
             i, j, k = test_constraint
-            if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None) and ((f_k := best_embedding.get(k)) is not None):
+            if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None) and (
+                    (f_k := best_embedding.get(k)) is not None):
                 new_cost += int(np.abs(f_i - f_j) > np.abs(f_i - f_k))
             else:
                 new_cost += 1
-                missing  += 1
+                missing += 1
 
             if new_cost != 0:
                 error_rate += 1
@@ -63,7 +68,7 @@ def main():
                 if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None):
                     new_cost += int(f_i > f_j)
                 else:
-                    missing  += 1
+                    missing += 1
                     new_cost += 1
 
             if new_cost != 0:
@@ -71,16 +76,17 @@ def main():
 
         del train_constraints[-1]
 
-    print(f"Accuracy: {100 - (error_rate / len(test_constraints)) * 100}%")
+    print(f"'{dataset_name}',{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE},{(error_rate / len(test_constraints))}")
+
     exit(0)
 
 
 if __name__ == "__main__":
-    # print(
-    #     f"Running test with EPSILON={EPSILON}, MNIST_ERROR_RATE={MNIST_ERROR_RATE}, MNIST_DIGIT_EXCLUSION_PROBABILITY={MNIST_DIGIT_EXCLUSION_PROBABILITY}")
+    if USE_RANDOM:
+        dataset_name = "RANDOM_DATASET"
+    elif USE_MNIST:
+        dataset_name = "MNIST_DATASET"
 
-    # Build dir structure for the results
-    for ds in SUPPORTED_DATASETS:
-        setup_results_directories(ds)
+    #print(f"'{dataset_name}',{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}", file=sys.stderr)
 
-    main()
+    main(dataset_name)

@@ -24,7 +24,6 @@ def format_arguments(points, num_points, cpu_count):
     :param cpu_count:
     :return:
     """
-    print("Formatting arguments...", end="")
     chunk_size = floor(num_points / cpu_count)
     arguments = []
 
@@ -38,22 +37,7 @@ def format_arguments(points, num_points, cpu_count):
 
     arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
 
-    print("done!")
     return arguments
-
-
-def graph_format_arguments(graph, cpu_count):
-    print("Formatting arguments...", end="")
-    chunk_size = floor(len(graph.nodes) / cpu_count)
-    arguments = []
-    nodes = list(graph.nodes)
-    for i in range(cpu_count - 1):
-        arguments.append((nodes[i * chunk_size: (i + 1) * chunk_size].copy(), graph.copy(), i))
-
-    arguments.append((nodes[(cpu_count - 1) * chunk_size:].copy(), graph.copy(), cpu_count - 1))
-    print("done!")
-    return arguments
-
 
 def reverse_edges(G):
     ret = nx.DiGraph()

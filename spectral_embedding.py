@@ -28,7 +28,7 @@ if __name__ == "__main__":
     idx_constraints, reverse_cache, (x, y), class_distr = format_mnist_from_labels()
     G = nx.DiGraph()
 
-    train, test = train_test_split(idx_constraints, test_percentage=0.3)
+    train, test = train_test_split(idx_constraints, test_percentage=0.5)
 
     for constraint in train:
         for u,v in list(combinations(constraint, 2))[:-1]:
