@@ -75,7 +75,7 @@ def read_x_mnist(x_path, normalize=True):
         n_cols = readInt32(f.read(4))
         x = []
 
-        for i in tqdm(range(n_samples), desc="[MNIST] Read values", position=BAR_POSITION_OFFSET + 1):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read values", position=BAR_POSITION_OFFSET + 1, leave=False):
             image = []
             for j in range(n_rows * n_cols):
                 image.append(readInt8(f.read(1)))
@@ -96,7 +96,7 @@ def read_y_mnist(y_path):
         n_samples = readInt32(f.read(4))
 
         y = []
-        for i in tqdm(range(n_samples), desc="[MNIST] Read labels", position=BAR_POSITION_OFFSET + 1):
+        for i in tqdm(range(n_samples), desc="[MNIST] Read labels", position=BAR_POSITION_OFFSET + 1, leave=False):
             idx = readInt8(f.read(1))
             y.append([0 for i in range(10)])
             y[i][idx] = 1
@@ -129,16 +129,18 @@ def read_mnist(subsample=True):
 
     return np.array(new_x_test), np.array(new_y_test), class_distribution
 
+
 def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE):
-    dataset = [np.random.rand(1, 10) for _ in range(ROE_SAMPLES)]
+
+    dataset = [np.random.rand(1, 10) * 1 / 20 for _ in range(ROE_SAMPLES)]
     distance_matrix = np.zeros((len(dataset), len(dataset)))
     constraints = []
 
-    for i in tqdm(range(len(dataset)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1):
+    for i in tqdm(range(len(dataset)), desc="Distance Generation: ", leave=False):
         for j in range(len(dataset)):
             distance_matrix[i, j] = np.linalg.norm(dataset[i] - dataset[j], ord=2)
 
-    for i in tqdm(range(len(dataset)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2):
+    for i in tqdm(range(len(dataset)), desc="Triplet Generation : ", leave=False):
 
         # Take 50 Nearest neighbours
         indexed_digits  = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
@@ -177,11 +179,11 @@ def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAG
     # create distance matrix
     distance_matrix = np.zeros((STE_NUM_DIGITS, STE_NUM_DIGITS))
 
-    for i in tqdm(range(len(subsampled_x)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1):
+    for i in tqdm(range(len(subsampled_x)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1, leave=False):
         for j in range(len(subsampled_x)):
             distance_matrix[i, j] = np.linalg.norm(subsampled_x[i] - subsampled_x[j], ord=2)
 
-    for i in tqdm(range(len(subsampled_x)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2):
+    for i in tqdm(range(len(subsampled_x)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2, leave=False):
 
         # Take 50 Nearest neighbours
         indexed_digits  = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
@@ -211,7 +213,7 @@ def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_d
     idx_map = {}
     error_count = 0
     # do it on y_test, because is smaller
-    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) "):
+    for idx, y in tqdm(enumerate(y_test), desc="[MNIST] Triplet generation from labels -> O(n^3) ", leave=False):
         label = np.argmax(y)
         if use_distance:
             for idx2, y_2 in enumerate(y_test):
@@ -258,7 +260,7 @@ def format_mnist_from_correlations():
     new_dataset = []
     idx_map = {}
     correlations = np.corrcoef(x_test.reshape((x_test.shape[0], x_test.shape[1])))
-    for idx, row in tqdm(enumerate(correlations), desc="[MNIST] Triplet generation from correlations -> O(n^3)"):
+    for idx, row in tqdm(enumerate(correlations), desc="[MNIST] Triplet generation from correlations -> O(n^3)", leave=False):
         treshold_value = MNIST_MIN_CORR_COEFF
         for idx2, el in enumerate(row):
             if el >= treshold_value:

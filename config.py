@@ -14,7 +14,7 @@ MNIST_BUCKETS_BASE_WIDTH               = 0.0
 USE_MULTIPROCESS                       = True
 USE_DISTANCE                           = True
 STE_NUM_DIGITS                         = 1000
-CONTAMINATION_PERCENTAGE               = 0.25
+CONTAMINATION_PERCENTAGE               = 0.0
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False
 USE_MNIST                              = True
@@ -22,7 +22,7 @@ USE_RANDOM                             = False
 TRAIN_TEST_SPLIT_RATE                  = 0.3
 GRAPH_NUM_NODES                        = 4000
 ROE_SAMPLES                            = 1000
-BAR_POSITION_OFFSET                    = 5
+BAR_POSITION_OFFSET                    = 0
 
 if ENVIRON_EPSILON := environ.get("EPSILON"):
     EPSILON = float(ENVIRON_EPSILON)

@@ -1,12 +1,13 @@
 import random
 from collections import OrderedDict
 from itertools import combinations
+from time import sleep
 
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
 
-from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET
+from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
@@ -99,6 +100,17 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
 
     return ret
 
+def count_raw_violated_constraints(embedding, constraint):
+    error_count = 0
+    for i, j, k in constraint:
+        vector_f_i = np.array([embedding[i]])
+        vector_f_j = np.array([embedding[j]])
+        vector_f_k = np.array([embedding[k]])
+
+        error_count += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+
+    return error_count
+
 
 def count_violated_constraints(embedding, constraints, representatives, constraints_weights,
                                ignore_missing_values=False,
@@ -111,7 +123,12 @@ def count_violated_constraints(embedding, constraints, representatives, constrai
             f_j = embedding.get(representatives[t])
             f_k = embedding.get(representatives[k])
             if (f_i is not None) and (f_j is not None) and (f_k is not None):
-                weight += int(np.abs(f_i - f_j) >= np.abs(f_i - f_k)) * constraints_weights[idx]
+                vector_f_i = np.array([f_i])
+                vector_f_j = np.array([f_j])
+                vector_f_k = np.array([f_k])
+
+                weight += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k)) * \
+                          constraints_weights[idx]
             elif not ignore_missing_values:
                 weight += 1
         else:
@@ -198,16 +215,121 @@ def rename_constraints(constraints, first_token, second_token):
     return new_constraints
 
 
+def get_violated_constraints(embedding, constraints, use_distance=USE_DISTANCE):
+    # FIXME: Make it work also without distance
+    assert USE_DISTANCE
+    violated_constraints = []
+    for idx, constraint in enumerate(constraints):
+        if use_distance:
+            s, t, k = constraint
+            f_i = embedding.get(s)
+            f_j = embedding.get(t)
+            f_k = embedding.get(k)
+            if (f_i is not None) and (f_j is not None) and (f_k is not None):
+                if np.abs(f_i - f_j) >= np.abs(f_i - f_k):
+                    # if I have a constraint violation
+                    violated_constraints.append([s, t, k])
+            else:
+                violated_constraints.append([s, t, k])
+
+    return violated_constraints, [1 for _ in range(len(violated_constraints))]
+
+
+def get_pointwise_violation_instance(violated_constraints, violated_constraints_weights):
+    ret = {}
+
+    for idx, constraint in enumerate(violated_constraints):
+
+        for point in constraint:
+            if ret.get(point) is None:
+                ret[point] = violated_constraints_weights[idx]
+            else:
+                ret[point] += violated_constraints_weights[idx]
+
+    return ret
+
+
+def create_nd_embedding(best_embedding, n_dim=2):
+    new_embedding = OrderedDict()
+
+    for k, v in best_embedding.items():
+        embed_value = []
+        for _ in range(n_dim):
+            embed_value.append(v)
+        new_embedding[k] = tuple(embed_value)
+
+    return new_embedding
+
+
 def search_better_embedding(dataset, best_embedding, best_weight_violated_constraints, base_point,
-                            representatives, base_embedding, base_weight_violated_constraints, constraints_weight,
+                            representatives, base_embedding, base_weight_violated_constraints, constraints_weights,
                             process_id=0):
+    best_embedding, \
+    representatives, \
+    total_cost, \
+    renamed_constraints = search_better_1D_embedding(
+        dataset,
+        base_embedding,
+        base_point,
+        base_weight_violated_constraints,
+        best_embedding,
+        best_weight_violated_constraints,
+        constraints_weights,
+        process_id,
+        representatives,
+        dimension=1)
+
+    nd_best_embedding = create_nd_embedding(best_embedding, n_dim=2)
+
+    violated_constraints, \
+    violated_constraints_weights = get_violated_constraints(best_embedding, renamed_constraints,
+                                                            constraints_weights)
+    pointwise_violation_map = get_pointwise_violation_instance(violated_constraints, violated_constraints_weights)
+
+    next_dimension_embedding, _, _, _ = search_better_1D_embedding(
+        best_embedding,
+        base_point,
+        best_weight_violated_constraints,
+        best_embedding,
+        best_weight_violated_constraints,
+        violated_constraints_weights,
+        violated_constraints, process_id,
+        representatives,
+        dimension=2)
+
+    new_min_violated_constraints = total_cost
+    new_base_embedding = nd_best_embedding.copy()
+    for k, new_value in next_dimension_embedding.items():
+        # substitute the nth component with v, one at a time
+        prev_embedding = new_base_embedding.copy()
+        v1, v2 = new_base_embedding[k]
+
+        if v2 == new_value:
+            continue
+
+        new_base_embedding[k] = (v1, new_value)
+        new_weight = count_violated_constraints(new_base_embedding, dataset, representatives, constraints_weights)
+
+        if new_weight > new_min_violated_constraints:
+            # if the new value didn't improve the embedding, reset to the original embedding
+            new_base_embedding = prev_embedding.copy()
+        else:
+            new_min_violated_constraints = new_weight
+
+    best_embedding = new_base_embedding
+
+    return best_embedding, representatives, new_min_violated_constraints
+
+
+def search_better_1D_embedding(dataset, base_embedding, base_point, base_weight_violated_constraints, best_embedding,
+                               best_weight_violated_constraints, constraints_weight,
+                               representatives, dimension=1, process_id=0):
     # Create reference embedding
     local_best_embedding = base_embedding
     local_best_weight = base_weight_violated_constraints
     local_constraints = dataset
-
     for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
-                  desc=f"[Core {process_id}] Embeddings "):
+                  desc=f"[Core {process_id}] Embeddings ({dimension})"):
         # Swap contiguous pairs of representatives
         next_representatives = representatives.copy()
         next_representatives[i], next_representatives[i + 1] = next_representatives[i + 1], next_representatives[i]
@@ -225,11 +347,10 @@ def search_better_embedding(dataset, best_embedding, best_weight_violated_constr
             local_best_embedding = next_embedding
             local_best_weight = next_weight
             local_constraints = next_constraints
-
     if best_weight_violated_constraints > local_best_weight:
-        return local_best_embedding, representatives, local_best_weight
+        return local_best_embedding, representatives, local_best_weight, local_constraints
 
-    return best_embedding, representatives, best_weight_violated_constraints
+    return best_embedding, representatives, best_weight_violated_constraints, local_constraints
 
 
 def create_wlcc(embedding, dataset, use_distance=USE_DISTANCE):
@@ -310,17 +431,60 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         base_weight_violated_constraints = count_violated_constraints(base_embedding, projected_constraints,
                                                                       representatives, constraints_weights)
 
-        embedding, new_representatives, violated_constraints = search_better_embedding(projected_constraints,
-                                                                                       best_embedding,
-                                                                                       best_violated_constraints,
-                                                                                       base_point,
-                                                                                       representatives, base_embedding,
-                                                                                       base_weight_violated_constraints,
-                                                                                       constraints_weights,
-                                                                                       process_id=process_id)
+        embedding, new_representatives, num_violated_constraints, _ = search_better_1D_embedding(
+            projected_constraints,
+            base_embedding,
+            base_point,
+            base_weight_violated_constraints,
+            best_embedding,
+            best_violated_constraints,
+            constraints_weights,
+            representatives,
+            dimension=1, process_id=process_id)
 
-        if violated_constraints < best_violated_constraints:
+        if num_violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
-            best_violated_constraints = violated_constraints
+            best_violated_constraints = num_violated_constraints
 
     return best_embedding, best_violated_constraints
+
+
+
+def predict(best_embedding, dataset_name, test_constraints, train_constraints):
+    error_rate = 0
+    missing = 0
+    for test_constraint in tqdm(test_constraints, desc="Testing..."):
+        train_constraints.append(test_constraint)
+        new_cost = 0
+
+        if USE_DISTANCE:
+            i, j, k = test_constraint
+            if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None) and (
+                    (f_k := best_embedding.get(k)) is not None):
+                vector_f_i = np.array([f_i])
+                vector_f_j = np.array([f_j])
+                vector_f_k = np.array([f_k])
+
+                new_cost += int(np.linalg.norm(vector_f_i - vector_f_j) > np.linalg.norm(vector_f_i - vector_f_k))
+            else:
+                new_cost += 1
+                missing += 1
+
+            if new_cost != 0:
+                error_rate += 1
+        else:
+            for i, j in list(combinations(test_constraint, 2))[:-1]:
+
+                if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None):
+                    new_cost += int(f_i > f_j)
+                else:
+                    missing += 1
+                    new_cost += 1
+
+            if new_cost != 0:
+                error_rate += 1
+
+        del train_constraints[-1]
+    print(
+        f"'{dataset_name}',{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE},{(error_rate / len(test_constraints))}")
+    sleep(5)
