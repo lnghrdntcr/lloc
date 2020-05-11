@@ -1,26 +1,26 @@
 from os import environ
 
-EPSILON                                = 1 / 9
+EPSILON                                = 1 / 15
 
 MNIST_ROW_SIZE                         = 28
 MNIST_COL_SIZE                         = 28
-MNIST_SUBSAMPLE_FACTOR                 = 100
-MNIST_MEAN_VALUE_SCALE                 = 1.5
-MNIST_MIN_CORR_COEFF                   = 0.9
-MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1
-MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.0
-MNIST_ERROR_RATE                       = 0.0
-MNIST_BUCKETS_BASE_WIDTH               = 0.0
+MNIST_SUBSAMPLE_FACTOR                 = 100 # UNUSED
+MNIST_MEAN_VALUE_SCALE                 = 1.5 # UNUSED
+MNIST_MIN_CORR_COEFF                   = 0.9 # UNUSED
+MNIST_CONSTRAINT_INCLUSION_PROBABILITY = 1   # UNUSED
+MNIST_DIGIT_EXCLUSION_PROBABILITY      = 0.0 # UNUSED
+MNIST_ERROR_RATE                       = 0.0 # UNUSED
+MNIST_BUCKETS_BASE_WIDTH               = 0.0 # UNUSED
 USE_MULTIPROCESS                       = True
 USE_DISTANCE                           = True
 STE_NUM_DIGITS                         = 1000
-CONTAMINATION_PERCENTAGE               = 0.0
+CONTAMINATION_PERCENTAGE               = 0.5
 SUPPORTED_DATASETS                     = ["mnist"]
-GRAPH_MOCK                             = False
+GRAPH_MOCK                             = False # UNUSED
 USE_MNIST                              = True
 USE_RANDOM                             = False
 TRAIN_TEST_SPLIT_RATE                  = 0.3
-GRAPH_NUM_NODES                        = 4000
+GRAPH_NUM_NODES                        = 4000 # UNUSED
 ROE_SAMPLES                            = 1000
 BAR_POSITION_OFFSET                    = 0
 

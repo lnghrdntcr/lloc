@@ -10,6 +10,41 @@ from tqdm import tqdm
 from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE
 
 
+def kwik_fas(G: nx.DiGraph):
+    def kwiksort(nodes: [], edges: [], graph: nx.DiGraph):
+
+        if not nodes:
+            return []
+
+        # choose a pivot
+        pivot = random.choice(nodes)
+        nodes_left = []
+        nodes_right = []
+
+        for v in nodes:
+            if v == pivot:
+                continue
+            if (v, pivot) in edges:
+                nodes_left.append(v)
+            elif (pivot, v) in edges:
+                nodes_right.append(v)
+
+        G_l = graph.subgraph(nodes_left)
+        G_r = graph.subgraph(nodes_right)
+
+        return [*kwiksort(list(G_l.nodes), list(G_l.edges), G_l), pivot,
+                *kwiksort(list(G_r.nodes), list(G_r.nodes), G_r)]
+
+    ksset = [*kwiksort(list(G.nodes), list(G.edges), G), *list(G.nodes)]
+
+    ret = []
+    for el in ksset:
+        if el not in ret:
+            ret.append(el)
+
+    return ret
+
+
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
     """
     Constructs a DAG by removing edges of the feedback arc set incrementally
@@ -99,6 +134,7 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
             ret[key] = position
 
     return ret
+
 
 def count_raw_violated_constraints(embedding, constraint):
     error_count = 0
@@ -447,7 +483,6 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
             best_violated_constraints = num_violated_constraints
 
     return best_embedding, best_violated_constraints
-
 
 
 def predict(best_embedding, dataset_name, test_constraints, train_constraints):
