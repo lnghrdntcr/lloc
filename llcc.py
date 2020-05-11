@@ -10,7 +10,12 @@ from tqdm import tqdm
 from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE
 
 
-def kwik_fas(G: nx.DiGraph):
+def kwiksort_fas(G: nx.DiGraph):
+    """
+    Implementation of the kwik_sort FAS 2-approximate algorithm for weighted tournaments respecting triangle inequality
+    :param G: A Directed Graph
+    :return: A topological sort of the nodes
+    """
     def kwiksort(nodes: [], edges: [], graph: nx.DiGraph):
 
         if not nodes:
@@ -35,14 +40,7 @@ def kwik_fas(G: nx.DiGraph):
         return [*kwiksort(list(G_l.nodes), list(G_l.edges), G_l), pivot,
                 *kwiksort(list(G_r.nodes), list(G_r.nodes), G_r)]
 
-    ksset = [*kwiksort(list(G.nodes), list(G.edges), G), *list(G.nodes)]
-
-    ret = []
-    for el in ksset:
-        if el not in ret:
-            ret.append(el)
-
-    return ret
+    return [*kwiksort(list(G.nodes), list(G.edges), G)]
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
