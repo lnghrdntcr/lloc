@@ -16,8 +16,10 @@ def kwiksort_fas(G: nx.DiGraph):
     :param G: A Directed Graph
     :return: A topological sort of the nodes
     """
-    def kwiksort(nodes: [], edges: [], graph: nx.DiGraph):
+    def kwiksort(nodes: [], graph: nx.DiGraph):
 
+        if len(nodes) == 1:
+            return [nodes[0]]
         if not nodes:
             return []
 
@@ -26,21 +28,16 @@ def kwiksort_fas(G: nx.DiGraph):
         nodes_left = []
         nodes_right = []
 
-        for v in nodes:
-            if v == pivot:
-                continue
-            if (v, pivot) in edges:
-                nodes_left.append(v)
-            elif (pivot, v) in edges:
-                nodes_right.append(v)
+        nodes_left.extend([x[0] for x in graph.in_edges(pivot)])
+        nodes_right.extend([x[1] for x in graph.out_edges(pivot)])
 
         G_l = graph.subgraph(nodes_left)
         G_r = graph.subgraph(nodes_right)
 
-        return [*kwiksort(list(G_l.nodes), list(G_l.edges), G_l), pivot,
-                *kwiksort(list(G_r.nodes), list(G_r.nodes), G_r)]
+        return [*kwiksort(list(G_l.nodes), G_l), pivot,
+                *kwiksort(list(G_r.nodes), G_r)]
 
-    return [*kwiksort(list(G.nodes), list(G.edges), G)]
+    return [*kwiksort(list(G.nodes), G)]
 
 
 def feedback_arc_set(G: nx.DiGraph, process_id=0):
