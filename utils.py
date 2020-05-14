@@ -14,6 +14,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
+from llcc import count_raw_violated_constraints
 
 
 def format_arguments(points, num_points, cpu_count):
@@ -183,3 +184,43 @@ def maps_to(embedding, number):
         if v == number:
             ret.append(k)
     return ret
+
+
+
+
+def merge_embddings(new_best_embedding, tmp_best_violation_count, tmp_embedding, train_constraints):
+    for k, new_value in tqdm(new_best_embedding.items(), desc="Merging embeddings"):
+        next_embedding = tmp_embedding.copy()
+        v1, v2 = next_embedding[k]
+
+        # Skip the mapping if the element is mapped to zero
+        if (v2 == new_value) or (v1 == 0):
+            continue
+
+        next_embedding[k] = (v1, new_value)
+
+        # Count of violated constraints of the new embedding
+        new_error_count = count_raw_violated_constraints(next_embedding, train_constraints)
+        if new_error_count < tmp_best_violation_count:
+            tmp_best_violation_count = new_error_count
+            tmp_embedding = next_embedding
+    return tmp_best_violation_count, tmp_embedding
+
+
+def get_num_points(new_train_set):
+    # Calculate num points from constraints
+    point_set = set()
+    for constraint in new_train_set:
+        for el in constraint:
+            point_set.add(el)
+    new_num_points = len(point_set)
+    return new_num_points
+
+
+def reduce_embedding(best_embedding, min_cost, responses):
+    for embedding, n_violated_constraints in responses:
+        if n_violated_constraints < min_cost:
+            best_embedding = embedding
+            min_cost = n_violated_constraints
+    return best_embedding
+
