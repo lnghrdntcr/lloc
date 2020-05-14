@@ -64,7 +64,6 @@ def main(dataset_name):
 
     exit(0)
 
-
 if __name__ == "__main__":
     if USE_RANDOM:
         dataset_name = "RANDOM_DATASET"
