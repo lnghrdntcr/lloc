@@ -2,7 +2,7 @@ from os import system
 from tqdm import tqdm 
 
 if __name__ == "__main__":
-    for ds in tqdm(["MNIST"], desc="Dataset: ", position=0):
+    for ds in tqdm(["MNIST", "RANDOM"], desc="Dataset: ", position=0):
         USE_MNIST = int(ds == "MNIST")
         USE_RANDOM = int(ds == "RANDOM")
 
