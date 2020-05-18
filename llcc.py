@@ -489,8 +489,10 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints):
 
         if USE_DISTANCE:
             i, j, k = test_constraint
-            if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None) and (
-                    (f_k := best_embedding.get(k)) is not None):
+            f_i = best_embedding.get(i)
+            f_j = best_embedding.get(j)
+            f_k = best_embedding.get(k)
+            if (f_i is not None) and (f_j is not None) and (f_k is not None):
                 vector_f_i = np.array([f_i])
                 vector_f_j = np.array([f_j])
                 vector_f_k = np.array([f_k])
@@ -504,8 +506,9 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints):
                 error_rate += 1
         else:
             for i, j in list(combinations(test_constraint, 2))[:-1]:
-
-                if ((f_i := best_embedding.get(i)) is not None) and ((f_j := best_embedding.get(j)) is not None):
+                f_i = best_embedding.get(i)
+                f_j = best_embedding.get(j)
+                if (f_i is not None) and (f_j is not None):
                     new_cost += int(f_i > f_j)
                 else:
                     missing += 1

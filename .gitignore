@@ -1,5 +1,4 @@
-venv_pypy/
-venv/
+venv*
 datasets/*
 results/*
 __pycache__/

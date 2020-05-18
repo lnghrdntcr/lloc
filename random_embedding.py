@@ -25,8 +25,10 @@ if __name__ == "__main__":
     for test_constraint in test:
         i, j, k = test_constraint
         new_cost = 0
-        if ((f_i := random_embedding.get(i)) is not None) and ((f_j := random_embedding.get(j)) is not None) and (
-                (f_k := random_embedding.get(k)) is not None):
+        f_i = random_embedding.get(i)
+        f_j = random_embedding.get(j)
+        f_k = random_embedding.get(k)
+        if (f_i is not None) and (f_j is not None) and (f_k is not None):
             new_cost += int(np.abs(f_i - f_j) > np.abs(f_i - f_k))
         else:
             new_cost += 1
