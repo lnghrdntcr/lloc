@@ -39,7 +39,7 @@ def main(dataset_name):
     responses = process_pool.starmap(llcc, process_pool_arguments)
 
     best_embedding = reduce_embedding(best_embedding, min_cost, responses)
-    predict(best_embedding, dataset_name, test_constraints, train_constraints)
+    predict(best_embedding, dataset_name, test_constraints, train_constraints, embedding_dim=1)
 
     # SECOND DIMENSION!
     new_train_set, _ = get_violated_constraints(best_embedding, train_constraints)
@@ -54,15 +54,16 @@ def main(dataset_name):
     best_violation_count = count_raw_violated_constraints(projected_best_embedding, train_constraints)
     new_embedding = projected_best_embedding.copy()
     new_violation_count = best_violation_count
-    print(f"Original Violates {new_violation_count} constraints")
+    print(f"Original Violates {new_violation_count} constraints", file=sys.stderr)
     new_violation_count, best_embedding = merge_embddings(new_best_embedding, new_violation_count,
                                                           new_embedding, train_constraints)
 
-    print(f"New Violates {new_violation_count} constraints")
+    print(f"New Violates {new_violation_count} constraints", file=sys.stderr)
     process_pool.close()
-    predict(best_embedding, dataset_name, test_constraints, train_constraints)
+    predict(best_embedding, dataset_name, test_constraints, train_constraints, embedding_dim=2)
 
     exit(0)
+
 
 if __name__ == "__main__":
     if USE_RANDOM:
@@ -70,6 +71,6 @@ if __name__ == "__main__":
     elif USE_MNIST:
         dataset_name = "MNIST_DATASET"
 
-    # print(f"'{dataset_name}',{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}", file=sys.stderr)
+    print(f"'{dataset_name}',{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}", file=sys.stderr)
 
     main(dataset_name)
