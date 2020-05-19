@@ -13,7 +13,7 @@ MNIST_ERROR_RATE                       = 0.0 # UNUSED
 MNIST_BUCKETS_BASE_WIDTH               = 0.0 # UNUSED
 USE_MULTIPROCESS                       = True
 USE_DISTANCE                           = True
-STE_NUM_DIGITS                         = 100
+STE_NUM_DIGITS                         = 1000
 CONTAMINATION_PERCENTAGE               = 0.5
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False # UNUSED
@@ -43,7 +43,7 @@ if environ.get("MNIST"):
     USE_MNIST = bool(int(environ.get("MNIST")))
 
 if environ.get("RANDOM"):
-    USE_RANDOM = bool(int(environ.get("MNIST")))
+    USE_RANDOM = bool(int(environ.get("RANDOM")))
 
 if environ.get("TRAIN_TEST_SPLIT_RATE"):
     TRAIN_TEST_SPLIT_RATE = float(environ.get("TRAIN_TEST_SPLIT_RATE"))

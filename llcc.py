@@ -480,7 +480,7 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
     return best_embedding, best_violated_constraints
 
 
-def predict(best_embedding, dataset_name, test_constraints, train_constraints, embedding_dim=1):
+def predict(best_embedding, dataset_name, test_constraints, train_constraints, original_violated_constraints, embedding_dim=1):
     error_rate = 0
     missing = 0
     for test_constraint in tqdm(test_constraints, desc="Testing..."):
@@ -520,8 +520,7 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints, e
         del train_constraints[-1]
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))}", file=sys.stderr)
+        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints}", file=sys.stderr)
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))}")
-    sleep(5)
+        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints}")

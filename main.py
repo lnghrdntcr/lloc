@@ -39,7 +39,8 @@ def main(dataset_name):
     responses = process_pool.starmap(llcc, process_pool_arguments)
 
     best_embedding = reduce_embedding(best_embedding, min_cost, responses)
-    predict(best_embedding, dataset_name, test_constraints, train_constraints, embedding_dim=1)
+    best_violation_count = count_raw_violated_constraints(best_embedding, train_constraints)
+    predict(best_embedding, dataset_name, test_constraints, train_constraints, best_violation_count, embedding_dim=1)
 
     # SECOND DIMENSION!
     new_train_set, _ = get_violated_constraints(best_embedding, train_constraints)
@@ -60,7 +61,7 @@ def main(dataset_name):
 
     print(f"New Violates {new_violation_count} constraints", file=sys.stderr)
     process_pool.close()
-    predict(best_embedding, dataset_name, test_constraints, train_constraints, embedding_dim=2)
+    predict(best_embedding, dataset_name, test_constraints, train_constraints, new_violation_count, embedding_dim=2)
 
     exit(0)
 

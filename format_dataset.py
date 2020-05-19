@@ -195,11 +195,10 @@ def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAG
             farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
 
             for far_index in farthest_indices:
-                next = [close_index, far_index]
                 if rand() >= contamination_percentage:
-                    constraints.append([i, *next])
+                    constraints.append([i, close_index, far_index])
                 else:
-                    constraints.append([i, *np.random.permutation(next)])
+                    constraints.append([i, far_index, close_index])
 
     # Subsample again reduce the number of constraints constraints
     subsampled_constraints = sample(constraints, STE_NUM_DIGITS ** 2 // 10)
