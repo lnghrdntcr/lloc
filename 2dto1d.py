@@ -1,5 +1,6 @@
 import numpy as np
 import seaborn as sns
+import pandas as pd
 import matplotlib.pyplot as plt
 from itertools import combinations
 from tqdm import tqdm
@@ -30,8 +31,10 @@ def plotline(line):
 def get_x_y(arr):
     return [x[0] for x in arr], [y[1] for y in arr]
 
+
 def avg(arr):
     return sum(arr) / len(arr)
+
 
 def build_constraints_set(points):
     n_points = len(points)
@@ -69,13 +72,11 @@ def project(points, project_to):
     return np.array(ret)
 
 
-def test_line_embedding(constraints, core_id, seed):
+def test_line_embedding(base_embedding, constraints, core_id, seed):
     violated_constraints_trace = []
     np.random.seed(seed)
 
-    for i in range(50):
-        # Sleep for a random time in order to prevent
-        # the rng to choose the same random line across cores!
+    for _ in range(13):
         random_line = np.random.rand(1, 2)
         projected = project(base_embedding, random_line).reshape(N_POINTS, 2)
         x, y = get_x_y(projected)
@@ -90,32 +91,46 @@ def test_line_embedding(constraints, core_id, seed):
         with open("./results/results_2d_to_1d.csv", "a+") as f:
             f.write(f"{violated_constraints},{len(constraints)}\n")
 
-if __name__ == "__main__":
+    return violated_constraints_trace
+
+
+def main():
+    print(f"Running test with {N_POINTS} points.")
     base_embedding = random_embedding(N_POINTS)
     x, y = get_x_y(base_embedding)
-
     # Prepare for parallel test execution
     cpu_count = multiprocessing.cpu_count()
     process_pool = Pool(cpu_count)
-
     plt.scatter(x, y)
     plt.savefig("images/init.png")
     distance_matrix, constraints = build_constraints_set(base_embedding)
     all_violated_constraints = []
     random_seeds = []
-
     print(f"Generating random seeds...")
     for i in range(cpu_count):
+        # Sleep for a random time in order to prevent
+        # the rng to choose the same random line across cores!
         sleep(thread_safe_random())
         random_seeds.append(int(thread_safe_random() * 10000000))
-
     print(f"Testing....")
     begin = time()
-    results = process_pool.starmap(test_line_embedding, [(constraints, i, random_seeds[i]) for i in range(cpu_count)])
+    results = process_pool.starmap(test_line_embedding, [(base_embedding, constraints, i, random_seeds[i]) for i in range(cpu_count)])
     print(f"Testing finished. Time elapsed = {time() - begin}s")
-
     for result in results:
-        all_violated_constraints.extend(results)
-
+        all_violated_constraints.extend(result)
     average_violated_constraints = avg(all_violated_constraints)
-    print(f"Violating {average_violated_constraints} constraints on average. Percentage = {average_violated_constraints / len(constraints) * 100}%")
+    print(
+        f"Violating {average_violated_constraints} constraints on average. Percentage = {average_violated_constraints / len(constraints) * 100}%")
+
+
+if __name__ == "__main__":
+    for N_POINTS in [i * 25 for i in range(1, 9)]:
+        main()
+
+    df = pd.read_csv("./results/results_2d_to_1d.csv")
+
+    df["perc"] = df["violated_constraints"] / df["total_constraints"]
+    for i, group in df.groupby('total_constraints'):
+        sns.distplot(group["perc"], kde=True, hist=False, label=f"{i}")
+        plt.legend()
+    plt.savefig(f"./results/error_dist.png")
