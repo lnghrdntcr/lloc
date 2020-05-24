@@ -8,10 +8,18 @@ from llcc import count_raw_violated_constraints
 import multiprocessing
 from multiprocessing import Pool
 from time import sleep, time
-
+from scipy.special import comb
 from random import random as thread_safe_random
 
 N_POINTS = 100
+sns.set_style("dark")
+sns.set_style("ticks")
+sns.set_style("darkgrid")
+
+def clear_figures(): 
+    plt.clf()
+    plt.cla()
+    plt.close()
 
 
 def random_embedding(n_points, dim=2):
@@ -76,14 +84,11 @@ def test_line_embedding(base_embedding, constraints, core_id, seed):
     violated_constraints_trace = []
     np.random.seed(seed)
 
-    for _ in range(13):
+    for _ in range(50 - 13):
         random_line = np.random.rand(1, 2)
         projected = project(base_embedding, random_line).reshape(N_POINTS, 2)
         x, y = get_x_y(projected)
 
-        plt.scatter(x, y)
-        # plotline(random_line.reshape(2))
-        # plt.savefig(f"images/projection_on_line_{core_id * 8 + i}_{violated_constraints}.png")
         violated_constraints = count_raw_violated_constraints(projected, constraints)
         violated_constraints_trace.append(violated_constraints)
         print(
@@ -97,12 +102,9 @@ def test_line_embedding(base_embedding, constraints, core_id, seed):
 def main():
     print(f"Running test with {N_POINTS} points.")
     base_embedding = random_embedding(N_POINTS)
-    x, y = get_x_y(base_embedding)
     # Prepare for parallel test execution
     cpu_count = multiprocessing.cpu_count()
     process_pool = Pool(cpu_count)
-    plt.scatter(x, y)
-    plt.savefig("images/init.png")
     distance_matrix, constraints = build_constraints_set(base_embedding)
     all_violated_constraints = []
     random_seeds = []
@@ -124,13 +126,29 @@ def main():
 
 
 if __name__ == "__main__":
-    for N_POINTS in [i * 25 for i in range(1, 9)]:
+    points_map = dict([(int(i * comb(i - 1, 2)),i ) for i in [j * 25 for j in range(1,8)]])
+    for N_POINTS in [i * 25 for i in range(1, 8)]:
+        continue
         main()
-
+    
     df = pd.read_csv("./results/results_2d_to_1d.csv")
 
     df["perc"] = df["violated_constraints"] / df["total_constraints"]
+    maxes = {
+                "x": [],
+                "y": []
+            }
     for i, group in df.groupby('total_constraints'):
-        sns.distplot(group["perc"], kde=True, hist=False, label=f"{i}")
+        sns.distplot(group["perc"], kde=True, hist=False, label=f"{points_map[i]}")
         plt.legend()
-    plt.savefig(f"./results/error_dist.png")
+        plt.xlim((group["perc"].min(), group["perc"].max()))
+        maxes["x"].append(points_map[i])
+        maxes["y"].append(group["perc"].max())
+
+        plt.savefig(f"./images/error_dist_{points_map[i]}_points.png")
+        clear_figures()
+    ax = sns.barplot(x=maxes["x"], y=maxes["y"])
+    for i, (x, y) in enumerate(zip(maxes["x"], maxes["y"])): 
+        ax.text(x, y, y)
+    plt.savefig("test.png")
+    #plt.savefig(f"./results/error_dist.png")
