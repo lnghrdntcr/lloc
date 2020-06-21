@@ -1,5 +1,5 @@
-from format_dataset import format_mnist_from_labels
-from utils import train_test_split
+from format_datasets.format_dataset import format_mnist_from_labels
+from utils.utils import train_test_split
 import networkx as nx
 from itertools import combinations
 from random import random as rand

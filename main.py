@@ -1,17 +1,13 @@
 import multiprocessing
 import sys
 from collections import OrderedDict
-from itertools import combinations
 from multiprocessing import Pool
 
-import numpy as np
-from tqdm import tqdm
-
-from config import SUPPORTED_DATASETS, USE_MULTIPROCESS, USE_DISTANCE, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
+from utils.config import USE_MULTIPROCESS, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
     EPSILON, TRAIN_TEST_SPLIT_RATE
-from format_dataset import create_random_dataset, format_mnist_from_distances
+from format_datasets.format_dataset import create_random_dataset, format_mnist_from_distances
 from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
-from utils import setup_results_directories, format_arguments, \
+from utils.utils import format_arguments, \
     train_test_split, get_num_points, reduce_embedding, merge_embddings
 
 

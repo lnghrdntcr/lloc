@@ -105,7 +105,7 @@ def test_line_embedding(base_embedding, constraints, core_id, seed, range_begin,
         sys.stdout.write(
             f"\r[CORE {core_id}] Violated {violated_constraints} constraints. Percentage = {violated_constraints / len(constraints) * 100}%. angle = {angle / np.pi * 180}")
         sys.stdout.flush()
-        with open("./results/results_2d_to_1d_angle.csv", "a+") as f:
+        with open("../results/results_2d_to_1d_angle.csv", "a+") as f:
             f.write(f"{violated_constraints},{len(constraints)},{angle}\n")
 
     return violated_constraints_trace

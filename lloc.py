@@ -1,13 +1,12 @@
 import random
 from collections import OrderedDict
 from itertools import combinations
-from time import sleep
 
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
 
-from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE, \
+from utils.config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE, \
     USE_ADDITIVE_WEIGHTS
 import sys
 

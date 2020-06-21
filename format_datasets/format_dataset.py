@@ -4,11 +4,8 @@ from enum import Enum
 from struct import unpack
 from tqdm import tqdm
 import numpy as np
-from PIL import Image
-from config import USE_DISTANCE, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE_FACTOR, MNIST_MEAN_VALUE_SCALE, \
-    MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY, STE_NUM_DIGITS, ROE_SAMPLES, CONTAMINATION_PERCENTAGE, \
+from utils.config import USE_DISTANCE, MNIST_SUBSAMPLE_FACTOR, MNIST_MIN_CORR_COEFF, STE_NUM_DIGITS, ROE_SAMPLES, CONTAMINATION_PERCENTAGE, \
     BAR_POSITION_OFFSET
-from IPython import embed
 from random import sample as subsample
 
 
@@ -110,8 +107,8 @@ def read_mnist(subsample=True):
     # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
     # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
-    x_test = read_x_mnist("./datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
-    y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
+    x_test = read_x_mnist("../datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
+    y_test = read_y_mnist("../datasets/mnist/t10k-labels-idx1-ubyte")
 
     indices = set()
     if subsample:

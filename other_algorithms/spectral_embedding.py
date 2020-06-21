@@ -2,15 +2,9 @@ from itertools import combinations
 
 import numpy as np
 import networkx as nx
-from IPython import embed
 from scipy.sparse import csgraph
-from scipy.spatial.distance import cosine
-from random import random as rand
 
-from config import EPSILON, MNIST_ERROR_RATE, MNIST_DIGIT_EXCLUSION_PROBABILITY
-from lloc import count_violated_constraints
-
-from format_dataset import format_mnist_from_labels
+from format_datasets.format_dataset import format_mnist_from_labels
 
 # Create Matrix representing the constraints, how? Create a DiGraph where for each constraint [a, b, c]
 # there exists an edge (a, b), (a, c), (b, c). For each pair of nodes (i, j)
@@ -21,7 +15,7 @@ from format_dataset import format_mnist_from_labels
 # New Idea, the graph is useless and build the affinity matrix from the dataset
 # Final Idea, Rollback to the initial idea to create graph from pairwise constraints.
 # Used csgraph.laplacian to get Laplacian matrix
-from utils import train_test_split
+from utils.utils import train_test_split
 
 if __name__ == "__main__":
 
