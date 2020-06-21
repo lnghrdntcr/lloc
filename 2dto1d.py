@@ -4,17 +4,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from itertools import combinations
 from tqdm import tqdm
-from llcc import count_raw_violated_constraints
+from lloc import count_raw_violated_constraints
 import multiprocessing
 from multiprocessing import Pool
 from time import sleep, time
 from scipy.special import comb
 from random import random as thread_safe_random
+import sys
 
 N_POINTS = 100
-sns.set_style("dark")
-sns.set_style("ticks")
-sns.set_style("darkgrid")
+sns.set_style("whitegrid")
+
+RESOLUTION = 1 / 10
 
 def clear_figures(): 
     plt.clf()
@@ -80,21 +81,32 @@ def project(points, project_to):
     return np.array(ret)
 
 
-def test_line_embedding(base_embedding, constraints, core_id, seed):
+def get_random_line(angle = None):
+    if angle:
+        v = np.array([np.cos(angle), np.sin(angle)])
+    else:
+        x, y = np.random.normal(), np.random.normal()
+        v = np.array([x, y])
+        v /= np.linalg.norm(v)
+
+    return v.reshape((1, 2))
+
+
+def test_line_embedding(base_embedding, constraints, core_id, seed, range_begin, range_end):
     violated_constraints_trace = []
     np.random.seed(seed)
 
-    for _ in range(50 - 13):
-        random_line = np.random.rand(1, 2)
+    for angle_base in range(int(range_begin / RESOLUTION), int(range_end / RESOLUTION)):
+        angle = (angle_base * RESOLUTION - 180) / 180 * np.pi # radians
+        random_line = get_random_line(angle=angle)
         projected = project(base_embedding, random_line).reshape(N_POINTS, 2)
-        x, y = get_x_y(projected)
-
         violated_constraints = count_raw_violated_constraints(projected, constraints)
         violated_constraints_trace.append(violated_constraints)
-        print(
-            f"[CORE {core_id}] Violated {violated_constraints} constraints. Percentage = {violated_constraints / len(constraints) * 100}%.")
-        with open("./results/results_2d_to_1d.csv", "a+") as f:
-            f.write(f"{violated_constraints},{len(constraints)}\n")
+        sys.stdout.write(
+            f"\r[CORE {core_id}] Violated {violated_constraints} constraints. Percentage = {violated_constraints / len(constraints) * 100}%. angle = {angle / np.pi * 180}")
+        sys.stdout.flush()
+        with open("./results/results_2d_to_1d_angle.csv", "a+") as f:
+            f.write(f"{violated_constraints},{len(constraints)},{angle}\n")
 
     return violated_constraints_trace
 
@@ -114,9 +126,11 @@ def main():
         # the rng to choose the same random line across cores!
         sleep(thread_safe_random())
         random_seeds.append(int(thread_safe_random() * 10000000))
+
+    ranges = [(i * 360 / cpu_count, (i + 1) * 360 / cpu_count) for i in range(cpu_count)]
     print(f"Testing....")
     begin = time()
-    results = process_pool.starmap(test_line_embedding, [(base_embedding, constraints, i, random_seeds[i]) for i in range(cpu_count)])
+    results = process_pool.starmap(test_line_embedding, [(base_embedding, constraints, i, random_seeds[i], ranges[i][0], ranges[i][1]) for i in range(cpu_count)])
     print(f"Testing finished. Time elapsed = {time() - begin}s")
     for result in results:
         all_violated_constraints.extend(result)
@@ -126,29 +140,35 @@ def main():
 
 
 if __name__ == "__main__":
-    points_map = dict([(int(i * comb(i - 1, 2)),i ) for i in [j * 25 for j in range(1,8)]])
-    for N_POINTS in [i * 25 for i in range(1, 8)]:
-        continue
+    points_map = dict([(int(i * comb(i - 1, 2)), i) for i in [j * 25 for j in range(1,8)]])
+    for N_POINTS in [25 + i for i in range(1, 75)]:
         main()
-    
-    df = pd.read_csv("./results/results_2d_to_1d.csv")
 
-    df["perc"] = df["violated_constraints"] / df["total_constraints"]
-    maxes = {
-                "x": [],
-                "y": []
-            }
-    for i, group in df.groupby('total_constraints'):
-        sns.distplot(group["perc"], kde=True, hist=False, label=f"{points_map[i]}")
-        plt.legend()
-        plt.xlim((group["perc"].min(), group["perc"].max()))
-        maxes["x"].append(points_map[i])
-        maxes["y"].append(group["perc"].max())
+    # df = pd.read_csv("./results/results_2d_to_1d.csv")
+    #
+    # df["perc"] = df["violated_constraints"] / df["total_constraints"]
+    #
+    # df["points"] = df["total_constraints"].apply(lambda x: points_map[x])
+    #
+    # print(df["perc"].std() / df["perc"].mean() * 100, "%")
 
-        plt.savefig(f"./images/error_dist_{points_map[i]}_points.png")
-        clear_figures()
-    ax = sns.barplot(x=maxes["x"], y=maxes["y"])
-    for i, (x, y) in enumerate(zip(maxes["x"], maxes["y"])): 
-        ax.text(x, y, y)
-    plt.savefig("test.png")
-    #plt.savefig(f"./results/error_dist.png")
+    # maxes = {
+    #     "x": [],
+    #     "y": []
+    # }
+    # for i, group in df.groupby('total_constraints'):
+    #     sns.distplot(group["perc"], kde=True, hist=False, label=f"{points_map[i]}")
+    #     plt.legend()
+    #     plt.xlim((0, 1 / 3 + 0.1))
+    #     maxes["x"].append(points_map[i])
+    #     maxes["y"].append(group["perc"].mean())
+    #     print(group["perc"].mean())
+    #
+    #     #plt.savefig(f"./images/error_dist_{points_map[i]}_points.png")
+    #     #clear_figures()
+    # #plt.savefig(f"./images/error_dist_all.png")
+    # clear_figures()
+    # ax = sns.barplot(x=maxes["x"], y=maxes["y"])
+    # for i, (x, y) in enumerate(zip(maxes["x"], maxes["y"])):
+    #     ax.text(x, y, y)
+    # plt.savefig("./images/mean_error.png")

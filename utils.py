@@ -14,7 +14,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
-from llcc import count_raw_violated_constraints
+from lloc import count_raw_violated_constraints
 
 
 def format_arguments(points, num_points, cpu_count):

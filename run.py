@@ -10,7 +10,8 @@ if __name__ == "__main__":
             for epsilon_values in tqdm([1 / i for i in range(8, 10)], desc="Epsilon: ", position=2):
                 for p in tqdm([0, 0.1, 0.15, 0.20, 0.25], desc="Percentage: ", position=3):
                     for _ in range(5): 
-                        begin = time()
-                        system(
-                            f"EPSILON={epsilon_values} TRAIN_TEST_SPLIT_RATE={train_test_split_rate} CONTAMINATION_PERCENTAGE={p} MNIST={USE_MNIST} RANDOM={USE_RANDOM} python main.py >> results.csv")
-                        print(f"Time to run = {time() - begin}s")
+                        for USE_ADDITIVE_WEIGHTS in [1, 0]:
+                            begin = time()
+                            system(
+                                f"EPSILON={epsilon_values} ADDITIVE_WEIGHTS={USE_ADDITIVE_WEIGHTS} TRAIN_TEST_SPLIT_RATE={train_test_split_rate} CONTAMINATION_PERCENTAGE={p} MNIST={USE_MNIST} RANDOM={USE_RANDOM} python main.py >> results.csv")
+                            print(f"Time to run = {time() - begin}s")

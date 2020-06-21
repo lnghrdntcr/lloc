@@ -8,7 +8,7 @@ from scipy.spatial.distance import cosine
 from random import random as rand
 
 from config import EPSILON, MNIST_ERROR_RATE, MNIST_DIGIT_EXCLUSION_PROBABILITY
-from llcc import count_violated_constraints
+from lloc import count_violated_constraints
 
 from format_dataset import format_mnist_from_labels
 

@@ -7,8 +7,10 @@ import networkx as nx
 import numpy as np
 from tqdm import tqdm
 
-from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE
+from config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE, \
+    USE_ADDITIVE_WEIGHTS
 import sys
+
 
 def kwiksort_fas(G: nx.DiGraph):
     """
@@ -16,6 +18,7 @@ def kwiksort_fas(G: nx.DiGraph):
     :param G: A Directed Graph
     :return: A topological sort of the nodes
     """
+
     def kwiksort(nodes: [], graph: nx.DiGraph):
 
         if len(nodes) == 1:
@@ -40,7 +43,7 @@ def kwiksort_fas(G: nx.DiGraph):
     return [*kwiksort(list(G.nodes), G)]
 
 
-def feedback_arc_set(G: nx.DiGraph, process_id=0):
+def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
     """
     Constructs a DAG by removing edges of the feedback arc set incrementally
     :param G: Input graph
@@ -48,6 +51,10 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
     :return: A DAG
     """
     ret = G.copy()
+
+    if weight_map is None:
+        weight_map = dict((edge, 1) for edge in G.edges)
+
     for node in tqdm(ret.nodes, position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
                      desc=f"[Core {process_id}] FAS        "):
         in_edges = ret.in_edges(node)
@@ -56,9 +63,13 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
         for neighbor in neighbouring_nodes:
             try:
                 next(nx.simple_cycles(ret))
-                path_from = nx.shortest_path(ret, source=node, target=neighbor)
-                random_idx = random.randint(0, len(path_from) - 1)
-                ret.remove_edge(path_from[random_idx], path_from[(random_idx + 1) % len(path_from)])
+                path = nx.shortest_path(ret, source=node, target=neighbor)
+                edge_path = to_edgelist(path)
+                edge_map = [(edge, weight_map[edge]) for edge in edge_path]
+                # Remove edge (u,v) with higher cost
+                u, v = sorted(edge_map, key=lambda x: x[1], reverse=False)[0]
+
+                ret.remove_edge(u, v)
 
                 path_to = nx.shortest_path(ret, source=neighbor, target=node)
                 random_idx = random.randint(0, len(path_to) - 1)
@@ -69,6 +80,16 @@ def feedback_arc_set(G: nx.DiGraph, process_id=0):
                 return ret
 
     return ret
+
+
+def to_edgelist(path):
+    edge_path = []
+    for i, _ in enumerate(path):
+        try:
+            edge_path.append((path[i], path[i + 1]))
+        except:
+            break
+    return edge_path
 
 
 def create_buckets(arr, num_buckets, bucketed_class_distribution=None):
@@ -131,14 +152,24 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
     return ret
 
 
-def count_raw_violated_constraints(embedding, constraint):
+def count_raw_violated_constraints(embedding, constraint, edge_weight_map=None):
     error_count = 0
     for i, j, k in constraint:
-        vector_f_i = np.array([embedding[i]])
-        vector_f_j = np.array([embedding[j]])
-        vector_f_k = np.array([embedding[k]])
+        try:
+            vector_f_i = np.array([embedding[i]])
+            vector_f_j = np.array([embedding[j]])
+            vector_f_k = np.array([embedding[k]])
 
-        error_count += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+            error_count += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+
+            if edge_weight_map is not None:
+                    edge_weight_map[(i, j)] += int(
+                        np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+                    edge_weight_map[(i, k)] += int(
+                        np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+
+        except KeyError:
+            error_count += 1
 
     return error_count
 
@@ -157,9 +188,10 @@ def count_violated_constraints(embedding, constraints, representatives, constrai
                 vector_f_i = np.array([f_i])
                 vector_f_j = np.array([f_j])
                 vector_f_k = np.array([f_k])
-
-                weight += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k)) * \
+                weight_update = int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k)) * \
                           constraints_weights[idx]
+                weight += weight_update
+
             elif not ignore_missing_values:
                 weight += 1
         else:
@@ -247,7 +279,6 @@ def rename_constraints(constraints, first_token, second_token):
 
 
 def get_violated_constraints(embedding, constraints, use_distance=USE_DISTANCE):
-    # FIXME: Make it work also without distance
     assert USE_DISTANCE
     violated_constraints = []
     for idx, constraint in enumerate(constraints):
@@ -426,7 +457,19 @@ def create_wlcc(embedding, dataset, use_distance=USE_DISTANCE):
     return embedding, new_idx_constraints, weights
 
 
-def llcc(idx_constraints, num_points, all_dataset, process_id):
+def create_weight_map(dataset):
+    weight_map = {}
+    for i, j, k in dataset:
+        weight_map[(i, j)] = 1
+        weight_map[(i, k)] = 1
+    return weight_map.copy()
+
+
+def update_weight_map(weight_map, dataset, embedding):
+    count_raw_violated_constraints(embedding, dataset, edge_weight_map=weight_map)
+
+
+def lloc(idx_constraints, num_points, dataset, process_id):
     """
     Learns a line from the given ordinal constraints
     """
@@ -434,13 +477,18 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
     best_violated_constraints = float("inf")
     num_buckets = int(1 / EPSILON)
 
+    if USE_ADDITIVE_WEIGHTS:
+        weight_map = create_weight_map(dataset)
+    else:
+        weight_map = None
+
     for i in tqdm(range(num_points), position=process_id * 2 + BAR_POSITION_OFFSET, leave=False,
                   desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
         base_point = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == base_point, idx_constraints))
         G = build_graph_from_constraints(constraints, base_point)
-        reoriented = feedback_arc_set(G, process_id=process_id)
+        reoriented = feedback_arc_set(G, weight_map=weight_map, process_id=process_id)
         try:
             topological_ordered_nodes = list(nx.topological_sort(reoriented))
         except nx.exception.NetworkXUnfeasible:
@@ -456,9 +504,9 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
         # From here I have to build the WLCC instance
         representatives, base_embedding = build_representative_embedding(base_point, buckets)
         base_embedding = patch_embedding_from_all_constraints(base_embedding, representatives,
-                                                              all_dataset)
+                                                              dataset)
 
-        base_embedding, projected_constraints, constraints_weights = create_wlcc(base_embedding, all_dataset)
+        base_embedding, projected_constraints, constraints_weights = create_wlcc(base_embedding, dataset)
         base_weight_violated_constraints = count_violated_constraints(base_embedding, projected_constraints,
                                                                       representatives, constraints_weights)
 
@@ -477,10 +525,14 @@ def llcc(idx_constraints, num_points, all_dataset, process_id):
             best_embedding = embedding.copy()
             best_violated_constraints = num_violated_constraints
 
+        if USE_ADDITIVE_WEIGHTS:
+            update_weight_map(weight_map, dataset, best_embedding)
+
     return best_embedding, best_violated_constraints
 
 
-def predict(best_embedding, dataset_name, test_constraints, train_constraints, original_violated_constraints, embedding_dim=1):
+def predict(best_embedding, dataset_name, test_constraints, train_constraints, original_violated_constraints,
+            embedding_dim=1):
     error_rate = 0
     missing = 0
     for test_constraint in tqdm(test_constraints, desc="Testing..."):
@@ -520,7 +572,8 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints, o
         del train_constraints[-1]
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints}", file=sys.stderr)
+        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}",
+        file=sys.stderr)
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints}")
+        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}")

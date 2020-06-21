@@ -10,7 +10,7 @@ from tqdm import tqdm
 from config import SUPPORTED_DATASETS, USE_MULTIPROCESS, USE_DISTANCE, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
     EPSILON, TRAIN_TEST_SPLIT_RATE
 from format_dataset import create_random_dataset, format_mnist_from_distances
-from llcc import llcc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
+from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
 from utils import setup_results_directories, format_arguments, \
     train_test_split, get_num_points, reduce_embedding, merge_embddings
 
@@ -36,7 +36,7 @@ def main(dataset_name):
 
     train_constraints, test_constraints = train_test_split(constraints, test_percentage=TRAIN_TEST_SPLIT_RATE)
     process_pool_arguments = format_arguments(train_constraints, num_points, cpu_count)
-    responses = process_pool.starmap(llcc, process_pool_arguments)
+    responses = process_pool.starmap(lloc, process_pool_arguments)
 
     best_embedding = reduce_embedding(best_embedding, min_cost, responses)
     best_violation_count = count_raw_violated_constraints(best_embedding, train_constraints)
@@ -48,7 +48,7 @@ def main(dataset_name):
     new_num_points = get_num_points(new_train_set)
 
     process_pool_args = format_arguments(new_train_set, new_num_points, cpu_count)
-    responses = process_pool.starmap(llcc, process_pool_args)
+    responses = process_pool.starmap(lloc, process_pool_args)
     new_best_embedding = reduce_embedding(OrderedDict(), float("inf"), responses)
 
     projected_best_embedding = create_nd_embedding(best_embedding, n_dim=2)

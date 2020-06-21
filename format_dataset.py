@@ -9,7 +9,7 @@ from config import USE_DISTANCE, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_SUBSAMPLE
     MNIST_MIN_CORR_COEFF, MNIST_DIGIT_EXCLUSION_PROBABILITY, STE_NUM_DIGITS, ROE_SAMPLES, CONTAMINATION_PERCENTAGE, \
     BAR_POSITION_OFFSET
 from IPython import embed
-from random import sample, choice
+from random import sample as subsample
 
 
 class TripletType(Enum):
@@ -130,7 +130,23 @@ def read_mnist(subsample=True):
     return np.array(new_x_test), np.array(new_y_test), class_distribution
 
 
-def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE):
+def sparsify_instance(subsampled_constraints):
+
+    # Remove half of the constraints in which the first half of the points appear
+    new_constraints = []
+    point_set = set()
+    remove_until_index = len(subsampled_constraints) // 2
+
+    for i,j,k in subsampled_constraints:
+        if i < remove_until_index:
+            if rand() > 0.5:
+                new_constraints.append((i, j, k))
+                point_set.update([i, j, k])
+
+    return new_constraints, len(point_set)
+
+
+def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE, sparsify=False):
 
     dataset = [np.random.rand(1, 10) * 1 / 20 for _ in range(ROE_SAMPLES)]
     distance_matrix = np.zeros((len(dataset), len(dataset)))
@@ -157,7 +173,10 @@ def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE):
                     constraints.append([i, *next])
                 else:
                     constraints.append([i, *np.random.permutation(next)])
-    subsampled_constraints = sample(constraints, 2 * ROE_SAMPLES ** 2 // 100)
+    subsampled_constraints = subsample(constraints, 2 * ROE_SAMPLES ** 2 // 100)
+
+    if sparsify:
+        return sparsify_instance(subsampled_constraints)
 
     return subsampled_constraints, ROE_SAMPLES
 
@@ -172,7 +191,7 @@ def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAG
     constraints = []
 
     # Subsample STE_NUM_DIGITS digits
-    subsample_idxs    = sample(range(len(list(x_test))), STE_NUM_DIGITS)
+    subsample_idxs    = subsample(range(len(list(x_test))), STE_NUM_DIGITS)
     subsampled_x      = [x_test[idx] for idx in subsample_idxs]
     subsampled_labels = dict([(i, np.argmax(y_test[digit_idx])) for i, digit_idx in enumerate(subsample_idxs)])
 
@@ -201,7 +220,7 @@ def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAG
                     constraints.append([i, far_index, close_index])
 
     # Subsample again reduce the number of constraints constraints
-    subsampled_constraints = sample(constraints, STE_NUM_DIGITS ** 2 // 10)
+    subsampled_constraints = subsample(constraints, STE_NUM_DIGITS ** 2 // 10)
     return subsampled_constraints, STE_NUM_DIGITS
 
 
