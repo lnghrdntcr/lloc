@@ -1,6 +1,8 @@
 venv*
 datasets/*
-results/*
-__pycache__/
+*/results/*
+*/__pycache__/
 .idea/
-images/
+*/images/
+
+*/cmake_build_debug/*
