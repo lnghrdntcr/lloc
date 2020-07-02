@@ -1,6 +1,6 @@
 from os import environ
 
-EPSILON                                = 1 / 15
+EPSILON                                = 1 / 20
 
 MNIST_ROW_SIZE                         = 28
 MNIST_COL_SIZE                         = 28
@@ -19,10 +19,12 @@ USE_ADDITIVE_WEIGHTS                   = False
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False # UNUSED
 USE_MNIST                              = False
-USE_RANDOM                             = True
+USE_RANDOM                             = False
+USE_SINE                               = False
+USE_DD_SQUARES                         = True
 TRAIN_TEST_SPLIT_RATE                  = 0.3
 GRAPH_NUM_NODES                        = 4000 # UNUSED
-ROE_SAMPLES                            = 1000
+ROE_SAMPLES                            = 100
 BAR_POSITION_OFFSET                    = 0
 
 if environ.get("EPSILON"):

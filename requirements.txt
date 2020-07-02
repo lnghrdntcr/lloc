@@ -21,6 +21,5 @@ tqdm~=4.46.0
 traitlets==4.3.3
 urllib3==1.25.8
 wcwidth==0.1.9
-
 seaborn~=0.10.1
 scipy~=1.4.1

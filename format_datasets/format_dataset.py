@@ -4,6 +4,7 @@ from enum import Enum
 from struct import unpack
 from tqdm import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
 from utils.config import USE_DISTANCE, MNIST_SUBSAMPLE_FACTOR, MNIST_MIN_CORR_COEFF, STE_NUM_DIGITS, ROE_SAMPLES, CONTAMINATION_PERCENTAGE, \
     BAR_POSITION_OFFSET
 from random import sample as subsample
@@ -176,6 +177,59 @@ def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE, spa
         return sparsify_instance(subsampled_constraints)
 
     return subsampled_constraints, ROE_SAMPLES
+
+def create_sine_dataset():
+    x = np.linspace(0, 1, ROE_SAMPLES)
+    y = 3 * np.sin(20 * x) + np.random.rand(ROE_SAMPLES) * 2
+    dataset = np.array([x, y])
+
+    distance_matrix = np.zeros((len(dataset[0]), len(dataset[0])))
+    constraints = []
+    contamination_percentage = 0
+    for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
+        for j in range(len(distance_matrix)):
+            distance_matrix[i, j] = np.linalg.norm(dataset[:, i] - dataset[:, j], ord=2)
+
+    constraints = format_triplets_from_distance(distance_matrix)
+
+    return constraints, ROE_SAMPLES
+
+
+def format_triplets_from_distance(distance_matrix):
+    constraints = []
+    for i in tqdm(range(len(distance_matrix)), desc="Triplet Generation : ", leave=False):
+        for j in range(len(distance_matrix)):
+            if j == i:
+                continue
+
+            for k in range(len(distance_matrix)):
+                if k == i or k == j:
+                    continue
+
+                if distance_matrix[i, j] < distance_matrix[i, k]:
+                    constraints.append([i, j, k])
+        return constraints
+
+
+
+def create_double_density_squares(outer_density = 0.3):
+    num_points_inner = int((1 - outer_density) * ROE_SAMPLES * 2)
+    num_points_outer = int(outer_density * ROE_SAMPLES * 2)
+    points_outer = np.random.rand(num_points_outer, 2) * 2 - 1
+    points_inner = np.random.rand(num_points_inner, 2) - 0.5
+    dataset = np.concatenate((points_outer, points_inner))
+    n_points = num_points_inner + num_points_outer
+    distance_matrix = np.zeros((n_points, n_points))
+
+    constraints = []
+    contamination_percentage = 0
+    for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
+        for j in range(len(distance_matrix)):
+            distance_matrix[i, j] = np.linalg.norm(dataset[i, :] - dataset[j, :], ord=2)
+
+    constraints = format_triplets_from_distance(distance_matrix)
+    return constraints, ROE_SAMPLES * 2
+
 
 def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAGE):
     """

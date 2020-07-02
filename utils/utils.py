@@ -1,4 +1,5 @@
 import json
+from collections import OrderedDict
 from io import BytesIO
 from math import factorial
 from math import floor
@@ -12,10 +13,11 @@ import numpy as np
 import requests as req
 from PIL import Image
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from utils.config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
 from lloc import count_raw_violated_constraints
-
+from IPython import embed
 
 def format_arguments(points, num_points, cpu_count):
     """
@@ -121,8 +123,8 @@ def save_embedding(embedding):
 def maps_to(embedding, index):
     vertices = []
     for k, v in embedding.items():
-        if v == index:
-            vertices.append(int(k))
+        if v[0] == index:
+            vertices.append(k)
     return vertices
 
 
@@ -224,3 +226,33 @@ def reduce_embedding(best_embedding, min_cost, responses):
             min_cost = n_violated_constraints
     return best_embedding
 
+
+def draw_embedding(best_embedding: OrderedDict):
+    n_buckets = int(1 / EPSILON)
+    reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
+
+    for k, (x, y) in best_embedding.items():
+        reverse_map[x].append(k)
+
+    for k, v in reverse_map.items():
+        #Take all elements and equally space them from k - 0.5 to k + 0.5
+        for n in range(len(v)):
+            new_amt = (n+1) * 1 / len(v) + k - 0.5
+            best_embedding[v[n]] = (new_amt, best_embedding[v[n]][1])
+
+    reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
+
+    for k, (x, y) in best_embedding.items():
+        reverse_map[y].append(k)
+
+    for k, v in reverse_map.items():
+        # Take all elements and equally space them from k - 0.5 to k + 0.5
+        for n in range(len(v)):
+            new_amt = (n + 1) * 1 / len(v) + k - 0.5
+            best_embedding[v[n]] = (best_embedding[v[n]][0], new_amt)
+
+    xs = [x for x, _ in best_embedding.values()]
+    ys = [y for _, y in best_embedding.values()]
+    plt.scatter(xs, ys)
+    plt.savefig("Vediamo.png")
+    embed()
