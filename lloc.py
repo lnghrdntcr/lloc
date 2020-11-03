@@ -18,7 +18,7 @@ def kwiksort_fas(G: nx.DiGraph):
     :return: A topological sort of the nodes
     """
 
-    def kwiksort(nodes: [], graph: nx.DiGraph):
+    def _kwiksort(nodes: [], graph: nx.DiGraph):
 
         if len(nodes) == 1:
             return [nodes[0]]
@@ -36,10 +36,10 @@ def kwiksort_fas(G: nx.DiGraph):
         G_l = graph.subgraph(nodes_left)
         G_r = graph.subgraph(nodes_right)
 
-        return [*kwiksort(list(G_l.nodes), G_l), pivot,
-                *kwiksort(list(G_r.nodes), G_r)]
+        return [*_kwiksort(list(G_l.nodes), G_l), pivot,
+                *_kwiksort(list(G_r.nodes), G_r)]
 
-    return [*kwiksort(list(G.nodes), G)]
+    return [*_kwiksort(list(G.nodes), G)]
 
 
 def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
@@ -61,6 +61,7 @@ def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
 
         for neighbor in neighbouring_nodes:
             try:
+                # Early exit condition, if this excepts the graph is acyclic
                 next(nx.simple_cycles(ret))
                 path = nx.shortest_path(ret, source=node, target=neighbor)
                 edge_path = to_edgelist(path)

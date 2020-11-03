@@ -18,14 +18,15 @@ CONTAMINATION_PERCENTAGE               = 0.3
 USE_ADDITIVE_WEIGHTS                   = False
 SUPPORTED_DATASETS                     = ["mnist"]
 GRAPH_MOCK                             = False # UNUSED
-USE_MNIST                              = False
+USE_MNIST                              = True
 USE_RANDOM                             = False
 USE_SINE                               = False
-USE_DD_SQUARES                         = True
+USE_DD_SQUARES                         = False
 TRAIN_TEST_SPLIT_RATE                  = 0.3
 GRAPH_NUM_NODES                        = 4000 # UNUSED
 ROE_SAMPLES                            = 100
 BAR_POSITION_OFFSET                    = 0
+SECOND_DIM                             = 0
 
 if environ.get("EPSILON"):
     EPSILON = float(environ.get("EPSILON"))
@@ -53,3 +54,6 @@ if environ.get("ADDITIVE_WEIGHTS"):
 
 if environ.get("TRAIN_TEST_SPLIT_RATE"):
     TRAIN_TEST_SPLIT_RATE = float(environ.get("TRAIN_TEST_SPLIT_RATE"))
+
+if environ.get("SECOND_DIM"):
+    SECOND_DIM = bool(int(environ.get("SECOND_DIM")))

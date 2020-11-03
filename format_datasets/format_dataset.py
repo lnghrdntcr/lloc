@@ -108,8 +108,8 @@ def read_mnist(subsample=True):
     # x_train = read_x_mnist("./datasets/mnist/train-images-idx3-ubyte", normalize=False)
     # y_train = read_y_mnist("./datasets/mnist/train-labels-idx1-ubyte")
 
-    x_test = read_x_mnist("../datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
-    y_test = read_y_mnist("../datasets/mnist/t10k-labels-idx1-ubyte")
+    x_test = read_x_mnist("./datasets/mnist/t10k-images-idx3-ubyte", normalize=False)
+    y_test = read_y_mnist("./datasets/mnist/t10k-labels-idx1-ubyte")
 
     indices = set()
     if subsample:
