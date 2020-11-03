@@ -23,12 +23,13 @@ See `main.py` for an example.
 Examples on how to build the triplet constraints are provided in the `format_dataset/format_dataset.py` file (see `format_mnist_from_distances`, or `create_sine_dataset` functions).
 
 ## Authors
-* Francesco Sgherzi 
-* Diego Ihara
+* [Francesco Sgherzi](https://fsgher2.people.uic.edu/)
+* [Diego Ihara](https://dihara2.people.uic.edu/)
 * Bohan Fan
-* Anastasios Sidiropoulos
+* [Anastasios Sidiropoulos](https://sidiropo.people.uic.edu/)
 * Mina Valizadeh
 * Neshat Mohammadi
+
 
 ## Acknowledgments
 This work was supported by the National Science Foundation under award CAREER 1453472, and grants CCF-1815145, CCF-1934915.
