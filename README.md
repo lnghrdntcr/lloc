@@ -30,6 +30,8 @@ Examples on how to build the triplet constraints are provided in the `format_dat
 * Mina Valizadeh
 * Neshat Mohammadi
 
+## Licensing
+This library is licensed under the MIT license. See `LICENSE` for details.
 
 ## Acknowledgments
 This work was supported by the National Science Foundation under award CAREER 1453472, and grants CCF-1815145, CCF-1934915.
