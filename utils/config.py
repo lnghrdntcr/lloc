@@ -24,9 +24,11 @@ USE_SINE                               = False
 USE_DD_SQUARES                         = False
 TRAIN_TEST_SPLIT_RATE                  = 0.3
 GRAPH_NUM_NODES                        = 4000 # UNUSED
-ROE_SAMPLES                            = 100
+ROE_SAMPLES                            = 300
 BAR_POSITION_OFFSET                    = 0
 SECOND_DIM                             = 0
+RECONSTRUCT_EMBEDDING                  = False
+METRIC_LEARNING                        = True
 
 if environ.get("EPSILON"):
     EPSILON = float(environ.get("EPSILON"))

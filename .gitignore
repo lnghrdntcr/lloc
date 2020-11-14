@@ -1,8 +1,10 @@
 venv*
-datasets/*
-results/*
+datasets/
+results/
 __pycache__/
 .idea/
 images/
 .ipynb_checkpoints
 *.png
+*.csv
+*.txt

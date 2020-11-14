@@ -65,8 +65,13 @@ def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
                 next(nx.simple_cycles(ret))
                 path = nx.shortest_path(ret, source=node, target=neighbor)
                 edge_path = to_edgelist(path)
+
+                if len(edge_path) == 0:
+                    continue
+
                 edge_map = [(edge, weight_map[edge]) for edge in edge_path]
                 # Remove edge (u,v) with higher cost
+
                 u, v = sorted(edge_map, key=lambda x: x[1], reverse=False)[0]
 
                 ret.remove_edge(u, v)
@@ -572,8 +577,8 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints, o
         del train_constraints[-1]
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}",
+        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}",
         file=sys.stderr)
 
     print(
-        f"{dataset_name},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}")
+        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE},{(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}")
