@@ -4,6 +4,8 @@ from string import ascii_uppercase
 from struct import unpack
 from tqdm import tqdm
 from sklearn import datasets
+from scipy.io import loadmat
+
 import IPython
 import os
 RUN_ALL_EXPERIMENTS = True
@@ -91,6 +93,17 @@ def read_isolet(path):
     x = df[attributes].to_numpy()
     y = df["class"].apply(lambda x: x.replace("'", "")).apply(lambda x: int(x)).to_numpy()
     return x, y
+
+def read_poisoned_synth(x_path, y_path):
+    x = loadmat(x_path)
+    y = loadmat(y_path)
+    return x["XXX"].T, y["YYY"].T.reshape((106,))
+
+def read_synth(x_path, y_path):
+    # Remove the last 5 points (the poisoned points)
+    x, y = read_poisoned_synth(x_path, y_path)
+    return x[:100, :], y[:100]
+
 
 
 def read_letters(path):

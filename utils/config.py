@@ -29,7 +29,7 @@ BAR_POSITION_OFFSET                    = 0
 SECOND_DIM                             = 0
 RECONSTRUCT_EMBEDDING                  = False
 METRIC_LEARNING                        = True
-
+USING                                  = "features"
 if environ.get("EPSILON"):
     EPSILON = float(environ.get("EPSILON"))
 
