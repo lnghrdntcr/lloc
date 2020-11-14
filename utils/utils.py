@@ -19,7 +19,7 @@ from utils.config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_
 from lloc import count_raw_violated_constraints
 from IPython import embed
 
-def format_arguments(points, num_points, cpu_count):
+def format_arguments(points, num_points, cpu_count, eps=EPSILON):
     """
     Formats the arguments into tuples to be fed to different processes
     :param points:
@@ -33,12 +33,12 @@ def format_arguments(points, num_points, cpu_count):
     for i in range(cpu_count - 1):
         projected_datapoints = filter(lambda x: i * chunk_size <= x[0] < (i + 1) * chunk_size, points)
         dp = list(projected_datapoints)
-        arguments.append((dp, chunk_size, points.copy(), i))
+        arguments.append((dp, chunk_size, points.copy(), i, eps))
 
     # Last points are handled separately
     dp = list(filter(lambda x: (cpu_count - 1) * chunk_size <= x[0], points))
 
-    arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1))
+    arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, eps))
 
     return arguments
 

@@ -33,6 +33,9 @@ USING                                  = "features"
 if environ.get("EPSILON"):
     EPSILON = float(environ.get("EPSILON"))
 
+if environ.get("USING"):
+    USING = environ.get("USING")
+
 if environ.get("MNIST_DIGIT_EXCLUSION_PROBABILITY"):
     MNIST_DIGIT_EXCLUSION_PROBABILITY = float(environ.get("MNIST_DIGIT_EXCLUSION_PROBABILITY"))
 

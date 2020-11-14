@@ -5,6 +5,7 @@ from itertools import combinations
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
+from IPython import embed
 
 from utils.config import EPSILON, USE_DISTANCE, BAR_POSITION_OFFSET, CONTAMINATION_PERCENTAGE, TRAIN_TEST_SPLIT_RATE, \
     USE_ADDITIVE_WEIGHTS
@@ -41,6 +42,19 @@ def kwiksort_fas(G: nx.DiGraph):
 
     return [*_kwiksort(list(G.nodes), G)]
 
+
+def new_fas(G: nx.DiGraph, process_id=0):
+
+    ret = G.copy()
+
+    while(True):
+        try:
+            cycle = nx.find_cycle(ret)
+            u, v = cycle[0]
+            ret.remove_edge(u, v)
+        except:
+            break
+    return ret
 
 def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
     """
@@ -265,6 +279,9 @@ def build_representative_embedding(base_point, buckets):
             if el != base_point:
                 embedding[el] = idx + 1
 
+    # remap it to zer0 in case that something happened
+    embedding[base_point] = 0
+
     return representatives, embedding
 
 
@@ -390,12 +407,12 @@ def search_better_embedding(dataset, best_embedding, best_weight_violated_constr
 
 def search_better_1D_embedding(dataset, base_embedding, base_point, base_weight_violated_constraints, best_embedding,
                                best_weight_violated_constraints, constraints_weight,
-                               representatives, dimension=1, process_id=0):
+                               representatives, epsilon, dimension=1, process_id=0):
     # Create reference embedding
     local_best_embedding = base_embedding
     local_best_weight = base_weight_violated_constraints
     local_constraints = dataset
-    for i in tqdm(range(int(1 / EPSILON) - 1), position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
+    for i in tqdm(range(int(1 / epsilon) - 1), position=process_id * 2 + 1 + BAR_POSITION_OFFSET, leave=False,
                   desc=f"[Core {process_id}] Embeddings ({dimension})"):
         # Swap contiguous pairs of representatives
         next_representatives = representatives.copy()
@@ -474,18 +491,14 @@ def update_weight_map(weight_map, dataset, embedding):
     count_raw_violated_constraints(embedding, dataset, edge_weight_map=weight_map)
 
 
-def lloc(idx_constraints, num_points, dataset, process_id):
+def lloc(idx_constraints, num_points, dataset, process_id, epsilon):
     """
     Learns a line from the given ordinal constraints
     """
     best_embedding = None
     best_violated_constraints = float("inf")
-    num_buckets = int(1 / EPSILON)
+    num_buckets = int(1 / epsilon)
 
-    if USE_ADDITIVE_WEIGHTS:
-        weight_map = create_weight_map(dataset)
-    else:
-        weight_map = None
 
     for i in tqdm(range(num_points), position=process_id * 2 + BAR_POSITION_OFFSET, leave=False,
                   desc=f"[Core {process_id}] Points     "):
@@ -493,14 +506,15 @@ def lloc(idx_constraints, num_points, dataset, process_id):
         base_point = i + process_id * num_points
         constraints = list(filter(lambda x: x[0] == base_point, idx_constraints))
         G = build_graph_from_constraints(constraints, base_point)
-        reoriented = feedback_arc_set(G, weight_map=weight_map, process_id=process_id)
+        reoriented = new_fas(G, process_id=process_id)
+        #for _ in range(100): print(reoriented, file=sys.stderr)
         try:
-            topological_ordered_nodes = list(nx.topological_sort(reoriented))
+            topologically_ordered_nodes = list(nx.topological_sort(reoriented))
         except nx.exception.NetworkXUnfeasible:
             # Skip iteration if a topological ordering cannot be built
             continue
 
-        buckets = create_buckets(topological_ordered_nodes, num_buckets)
+        buckets = create_buckets(topologically_ordered_nodes, num_buckets)
 
         if not buckets[0]:
             # Skip iteration if the point had no constraints to begin with
@@ -524,14 +538,12 @@ def lloc(idx_constraints, num_points, dataset, process_id):
             best_violated_constraints,
             constraints_weights,
             representatives,
+            epsilon,
             dimension=1, process_id=process_id)
 
         if num_violated_constraints < best_violated_constraints:
             best_embedding = embedding.copy()
             best_violated_constraints = num_violated_constraints
-
-        if USE_ADDITIVE_WEIGHTS:
-            update_weight_map(weight_map, dataset, best_embedding)
 
     return best_embedding, best_violated_constraints
 
@@ -577,8 +589,8 @@ def predict(best_embedding, dataset_name, test_constraints, train_constraints, o
         del train_constraints[-1]
 
     print(
-        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}",
+        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{epsilon},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE}, {(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}",
         file=sys.stderr)
 
     print(
-        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{EPSILON},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE},{(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}")
+        f"{dataset_name},{len(test_constraints) * 1 / TRAIN_TEST_SPLIT_RATE},{embedding_dim},{epsilon},{CONTAMINATION_PERCENTAGE},{TRAIN_TEST_SPLIT_RATE},{(error_rate / len(test_constraints))},{original_violated_constraints},{USE_ADDITIVE_WEIGHTS}")

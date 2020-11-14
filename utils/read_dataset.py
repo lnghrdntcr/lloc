@@ -159,9 +159,9 @@ def read_ionosphere(path):
 
 def load_poisoned():
 
-    for dataset_name in os.listdir("./datasets/fully_random_poisoned"):
+    for dataset_name in os.listdir("./datasets/metric_learning/fully_random_poisoned"):
 
-        path = f"./datasets/fully_random_poisoned/{dataset_name}"
+        path = f"./datasets/metric_learning/fully_random_poisoned/{dataset_name}"
 
         df = pd.read_csv(path, header=None)
         class_idx = len(df.columns) - 1

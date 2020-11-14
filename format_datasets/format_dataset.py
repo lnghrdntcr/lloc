@@ -375,17 +375,25 @@ def format_ml_dataset(x, y, using="features", dataset_name="None", subsample_fac
     constraints = []
 
     if using == "features":
-        for i, el_1 in tqdm(enumerate(x), desc=f"[{dataset_name.upper()}] From features"):
-            for j, el_2 in enumerate(x):
-                for k, el_3 in enumerate(x):
+        distance_matrix = np.zeros((len(x), len(x)))
+        for i in tqdm(range(len(x)), desc=f"[{dataset_name.upper()}]Distance Generation: ", leave=False):
+            for j in range(len(x)):
+                distance_matrix[i, j] = np.linalg.norm(x[i] - x[j], ord=2)
 
-                    if rand() > subsample_factor:
-                        d1 = np.linalg.norm(el_1 - el_2)
-                        d2 = np.linalg.norm(el_1 - el_3)
-                        if d1 < d2:
-                            constraints.append([i, j, k])
-                        else:
-                            constraints.append([i, k, j])
+        for i in tqdm(range(len(x)), desc=f"[{dataset_name.upper()}]Triplet Generation : ", position=BAR_POSITION_OFFSET + 2,
+                      leave=False):
+
+            # Take 50 Nearest neighbours
+            indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+            closest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1])][:50]
+
+            for close_index in closest_indices:
+                # take the 50 farthest neighbors
+                indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+                farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
+
+                for far_index in farthest_indices:
+                    constraints.append([i, close_index, far_index])
 
     elif using == "labels":
         for i, el_1 in tqdm(enumerate(y), desc=f"[{dataset_name.upper()}] From labels"):
