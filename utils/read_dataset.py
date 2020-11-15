@@ -174,25 +174,25 @@ def load_poisoned():
 def load_datasets():
 
     #Synthetic dataset
-    x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
-                                           "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
-    yield x_synth, y_synth, "synthetic"
+   # x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
+   #                                        "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
+   # yield x_synth, y_synth, "synthetic"
 
-    # Soybean dataset
-    x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
-    yield x_soybean, y_soybean, "soybean_real"
+   # # Soybean dataset
+   # x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
+   # yield x_soybean, y_soybean, "soybean_real"
 
-    # Iris dataset
-    x_iris, y_iris = read_iris()
-    yield x_iris, y_iris, "iris"
+   # # Iris dataset
+   # x_iris, y_iris = read_iris()
+   # yield x_iris, y_iris, "iris"
 
-    # Wine dataset
-    x_wine, y_wine = read_wine()
-    yield x_wine, y_wine, "wine"
+   # # Wine dataset
+   # x_wine, y_wine = read_wine()
+   # yield x_wine, y_wine, "wine"
 
-    # Ionosphere dataset
-    x_ionosphere, y_ionosphere = read_ionosphere("./datasets/metric_learning/ionosphere/ionosphere.csv")
-    yield x_ionosphere, y_ionosphere, "ionosphere"
+   # # Ionosphere dataset
+   # x_ionosphere, y_ionosphere = read_ionosphere("./datasets/metric_learning/ionosphere/ionosphere.csv")
+   # yield x_ionosphere, y_ionosphere, "ionosphere"
 
     if RUN_ALL_EXPERIMENTS:
         # Image segment dataset

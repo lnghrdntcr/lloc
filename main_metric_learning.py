@@ -12,7 +12,7 @@ from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_
 from utils.utils import format_arguments, \
     train_test_split, get_num_points, reduce_embedding, merge_embddings, draw_embedding
 
-from utils.read_dataset import load_dataset, load_poisoned
+import utils.read_dataset as rd 
 
 
 def create_dataset_from_embedding(embedding, dataset_labels, dataset_name, using="features"):
@@ -66,14 +66,14 @@ def train(dataset_features, dataset_labels, dataset_name, using=USING):
 
 
 if __name__ == "__main__":
-    for x, y, dataset_name in load_datasets():
+    for x, y, dataset_name in rd.load_datasets():
         for using in ["features", "labels"]:
             print(f"[{using.upper()}]Doing {dataset_name}")
             embedding = train(x, y, dataset_name, using=using)
     
 
-    for x, y, dataset_name in load_poisoned():
+    for x, y, dataset_name in rd.load_poisoned():
         for using in ["features", "labels"]:
             print(f"[{using.upper()}]Doing {dataset_name}")
-            embedding = train(x, y, dataset_name, using=using)
+            train(x, y, dataset_name, using=using)
 
