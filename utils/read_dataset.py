@@ -174,13 +174,13 @@ def load_poisoned():
 def load_datasets():
 
     #Synthetic dataset
-    x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
-                                          "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
-    yield x_synth, y_synth, "synthetic"
+    # x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
+    #                                       "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
+    # yield x_synth, y_synth, "synthetic"
 
-    # Soybean dataset
-    x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
-    yield x_soybean, y_soybean, "soybean_real"
+    # # Soybean dataset
+    # x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
+    # yield x_soybean, y_soybean, "soybean_real"
 
     # Iris dataset
     x_iris, y_iris = read_iris()
@@ -213,10 +213,10 @@ def load_datasets():
             "./datasets/metric_learning/german_credit/german_credit.tsv")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
         yield x_gc, y_gc, "german_credit"
 
-        # Isolet dataset
-        x_isolet, y_isolet = read_isolet("./datasets/metric_learning/isolet/isolet_csv.csv")
-        yield x_isolet, y_isolet, "isolet"
-
-        # Letters dataset
-        x_letters, y_letters = read_letters("./datasets/metric_learning/letters/letters.csv")
-        yield x_letters, y_letters, "letters"
+        # # Isolet dataset
+        # x_isolet, y_isolet = read_isolet("./datasets/metric_learning/isolet/isolet_csv.csv")
+        # yield x_isolet, y_isolet, "isolet"
+        #
+        # # Letters dataset
+        # x_letters, y_letters = read_letters("./datasets/metric_learning/letters/letters.csv")
+        # yield x_letters, y_letters, "letters"

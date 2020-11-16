@@ -171,9 +171,9 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
     return ret
 
 
-def count_raw_violated_constraints(embedding, constraint, edge_weight_map=None):
+def count_raw_violated_constraints(embedding, constraints, edge_weight_map=None):
     error_count = 0
-    for i, j, k in constraint:
+    for i, j, k in constraints:
         try:
             vector_f_i = np.array([embedding[i]])
             vector_f_j = np.array([embedding[j]])

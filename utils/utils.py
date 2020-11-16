@@ -197,7 +197,8 @@ def merge_embeddings(new_best_embedding, tmp_best_violation_count, tmp_embedding
             next_embedding[k] = (new_value, new_value)
             continue
 
-        # Skip the mapping if the element is mapped to zero
+        # Skip the mapping if the element is mapped to zero or
+        # the element is mapped to the same as before
         if (v2 == new_value) or (v1 == 0):
             continue
 

@@ -2,15 +2,17 @@ import multiprocessing
 import sys
 from collections import OrderedDict
 from multiprocessing import Pool
-
 from tqdm import tqdm
 
-import utils.read_dataset as rd
-from format_datasets.format_dataset import format_ml_dataset
-from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints
-from utils.config import USING, USE_MULTIPROCESS, EPSILON, SECOND_DIM
+from utils.config import USING, USE_MULTIPROCESS, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
+    EPSILON, TRAIN_TEST_SPLIT_RATE, USE_SINE, USE_DD_SQUARES, SECOND_DIM
+from format_datasets.format_dataset import create_random_dataset, format_mnist_from_distances, create_sine_dataset, \
+    create_double_density_squares, format_ml_dataset
+from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
 from utils.utils import format_arguments, \
-    get_num_points, reduce_embedding, merge_embeddings
+    train_test_split, get_num_points, reduce_embedding, merge_embeddings
+
+import utils.read_dataset as rd
 
 
 def create_dataset_from_embedding(embedding, dataset_labels, dataset_name, using="features", n_dims=1):
@@ -35,9 +37,17 @@ def create_dataset_from_embedding(embedding, dataset_labels, dataset_name, using
 
         else:
             file.write("idx,x,y,label\n")
+            for i in tqdm(range(int(1 / EPSILON)), desc=f"[{dataset_name.upper()}] Creating new embedding"):
+                points_to_i = [(k, v2) for k, (v1, v2) in embedding.items() if v1 == i]
+                if len(points_to_i) == 0:
+                    continue
+                spacing = 1 / len(points_to_i)
 
-            for idx, (v1, v2) in tqdm(embedding.items(), desc=f"[{dataset_name.upper()}] Writing new embedding"):
-                file.write(f"{idx},{v1},{v2},{dataset_labels[idx]}\n")
+                # map point from i-spacing * len(points_to_i) * 0.5 to i+spacing * len(points_to_i) * 0.5
+                new_points = [(k, i - 0.3 + idx * spacing * 0.6, v2) for idx, (k, v2) in enumerate(points_to_i)]
+
+            for k, (v1, v2) in tqdm(new_points, desc=f"[{dataset_name.upper()}] Writing new embedding"):
+                file.write(f"{k},{v1},{v2},{dataset_labels[k]}\n")
 
 
 
