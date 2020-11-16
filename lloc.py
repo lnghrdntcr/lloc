@@ -44,10 +44,9 @@ def kwiksort_fas(G: nx.DiGraph):
 
 
 def new_fas(G: nx.DiGraph, process_id=0):
-
     ret = G.copy()
 
-    while(True):
+    while (True):
         try:
             cycle = nx.find_cycle(ret)
             u, v = cycle[0]
@@ -55,6 +54,7 @@ def new_fas(G: nx.DiGraph, process_id=0):
         except:
             break
     return ret
+
 
 def feedback_arc_set(G: nx.DiGraph, weight_map=None, process_id=0):
     """
@@ -182,10 +182,10 @@ def count_raw_violated_constraints(embedding, constraint, edge_weight_map=None):
             error_count += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
 
             if edge_weight_map is not None:
-                    edge_weight_map[(i, j)] += int(
-                        np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
-                    edge_weight_map[(i, k)] += int(
-                        np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+                edge_weight_map[(i, j)] += int(
+                    np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
+                edge_weight_map[(i, k)] += int(
+                    np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
 
         except KeyError:
             error_count += 1
@@ -207,8 +207,9 @@ def count_violated_constraints(embedding, constraints, representatives, constrai
                 vector_f_i = np.array([f_i])
                 vector_f_j = np.array([f_j])
                 vector_f_k = np.array([f_k])
-                weight_update = int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k)) * \
-                          constraints_weights[idx]
+                weight_update = int(
+                    np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k)) * \
+                                constraints_weights[idx]
                 weight += weight_update
 
             elif not ignore_missing_values:
@@ -499,7 +500,6 @@ def lloc(idx_constraints, num_points, dataset, process_id, epsilon):
     best_violated_constraints = float("inf")
     num_buckets = int(1 / epsilon)
 
-
     for i in tqdm(range(num_points), position=process_id * 2 + BAR_POSITION_OFFSET, leave=False,
                   desc=f"[Core {process_id}] Points     "):
         # find constraints where p_i is the first
@@ -507,7 +507,7 @@ def lloc(idx_constraints, num_points, dataset, process_id, epsilon):
         constraints = list(filter(lambda x: x[0] == base_point, idx_constraints))
         G = build_graph_from_constraints(constraints, base_point)
         reoriented = new_fas(G, process_id=process_id)
-        #for _ in range(100): print(reoriented, file=sys.stderr)
+
         try:
             topologically_ordered_nodes = list(nx.topological_sort(reoriented))
         except nx.exception.NetworkXUnfeasible:
@@ -549,7 +549,7 @@ def lloc(idx_constraints, num_points, dataset, process_id, epsilon):
 
 
 def predict(best_embedding, dataset_name, test_constraints, train_constraints, original_violated_constraints,
-            embedding_dim=1):
+            embedding_dim=1, epsilon=EPSILON):
     error_rate = 0
     missing = 0
     for test_constraint in tqdm(test_constraints, desc="Testing..."):

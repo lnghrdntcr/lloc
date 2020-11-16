@@ -1,5 +1,4 @@
 import json
-from collections import OrderedDict
 from io import BytesIO
 from math import factorial
 from math import floor
@@ -13,11 +12,10 @@ import numpy as np
 import requests as req
 from PIL import Image
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
-from utils.config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
 from lloc import count_raw_violated_constraints
-from IPython import embed
+from utils.config import EPSILON, MNIST_COL_SIZE, MNIST_ROW_SIZE, MNIST_BUCKETS_BASE_WIDTH
+
 
 def format_arguments(points, num_points, cpu_count, eps=EPSILON):
     """
@@ -41,6 +39,7 @@ def format_arguments(points, num_points, cpu_count, eps=EPSILON):
     arguments.append((dp, num_points - (chunk_size * (cpu_count - 1)), points, cpu_count - 1, eps))
 
     return arguments
+
 
 def reverse_edges(G):
     ret = nx.DiGraph()
@@ -78,7 +77,7 @@ def save_fec_results(embeddings, image_cache, crop_map, directory=True):
             bottom_right_row = w * float(brr)
             face = img_file.crop((top_left_col, top_left_row, bottom_right_col, bottom_right_row))
             if directory:
-               face.save(f"./results/FEC/{directory}/{image_index}.jpg")
+                face.save(f"./results/FEC/{directory}/{image_index}.jpg")
             idx += 1
 
 
@@ -188,12 +187,15 @@ def maps_to(embedding, number):
     return ret
 
 
-
-
-def merge_embddings(new_best_embedding, tmp_best_violation_count, tmp_embedding, train_constraints):
+def merge_embeddings(new_best_embedding, tmp_best_violation_count, tmp_embedding, train_constraints):
     for k, new_value in tqdm(new_best_embedding.items(), desc="Merging embeddings"):
         next_embedding = tmp_embedding.copy()
-        v1, v2 = next_embedding[k]
+
+        try:
+            v1, v2 = next_embedding[k]
+        except KeyError:
+            next_embedding[k] = (new_value, new_value)
+            continue
 
         # Skip the mapping if the element is mapped to zero
         if (v2 == new_value) or (v1 == 0):
@@ -203,6 +205,7 @@ def merge_embddings(new_best_embedding, tmp_best_violation_count, tmp_embedding,
 
         # Count of violated constraints of the new embedding
         new_error_count = count_raw_violated_constraints(next_embedding, train_constraints)
+
         if new_error_count < tmp_best_violation_count:
             tmp_best_violation_count = new_error_count
             tmp_embedding = next_embedding
@@ -227,32 +230,32 @@ def reduce_embedding(best_embedding, min_cost, responses):
     return best_embedding
 
 
-def draw_embedding(best_embedding: OrderedDict):
-    n_buckets = int(1 / EPSILON)
-    reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
-
-    for k, (x, y) in best_embedding.items():
-        reverse_map[x].append(k)
-
-    for k, v in reverse_map.items():
-        #Take all elements and equally space them from k - 0.5 to k + 0.5
-        for n in range(len(v)):
-            new_amt = (n+1) * 1 / len(v) + k - 0.5
-            best_embedding[v[n]] = (new_amt, best_embedding[v[n]][1])
-
-    reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
-
-    for k, (x, y) in best_embedding.items():
-        reverse_map[y].append(k)
-
-    for k, v in reverse_map.items():
-        # Take all elements and equally space them from k - 0.5 to k + 0.5
-        for n in range(len(v)):
-            new_amt = (n + 1) * 1 / len(v) + k - 0.5
-            best_embedding[v[n]] = (best_embedding[v[n]][0], new_amt)
-
-    xs = [x for x, _ in best_embedding.values()]
-    ys = [y for _, y in best_embedding.values()]
-    plt.scatter(xs, ys)
-    plt.savefig("Vediamo.png")
-    embed()
+# def draw_embedding(best_embedding: OrderedDict):
+#     n_buckets = int(1 / EPSILON)
+#     reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
+#
+#     for k, (x, y) in best_embedding.items():
+#         reverse_map[x].append(k)
+#
+#     for k, v in reverse_map.items():
+#         # Take all elements and equally space them from k - 0.5 to k + 0.5
+#         for n in range(len(v)):
+#             new_amt = (n + 1) * 1 / len(v) + k - 0.5
+#             best_embedding[v[n]] = (new_amt, best_embedding[v[n]][1])
+#
+#     reverse_map = OrderedDict([(i, []) for i in range(n_buckets + 1)])
+#
+#     for k, (x, y) in best_embedding.items():
+#         reverse_map[y].append(k)
+#
+#     for k, v in reverse_map.items():
+#         # Take all elements and equally space them from k - 0.5 to k + 0.5
+#         for n in range(len(v)):
+#             new_amt = (n + 1) * 1 / len(v) + k - 0.5
+#             best_embedding[v[n]] = (best_embedding[v[n]][0], new_amt)
+#
+#     xs = [x for x, _ in best_embedding.values()]
+#     ys = [y for _, y in best_embedding.values()]
+#     plt.scatter(xs, ys)
+#     plt.savefig("Vediamo.png")
+#     embed()

@@ -23,12 +23,16 @@ if __name__ == '__main__':
         if "csv" not in file:
             continue
 
-        if "from-labels" in file:
-            type="labels"
-        else:
-            type = "features"
-        fname =f"{base_dir}/{file}"
+        if "1d" not in file:
+            continue
 
+        if "from-labels" in file:
+            t = "labels"
+        else:
+            t = "features"
+        fname = f"{base_dir}/{file}"
+
+        print(fname)
         df = pd.read_csv(fname)
         df = df[["value", "label"]]
 
@@ -45,8 +49,8 @@ if __name__ == '__main__':
             errors += int(ans[i] != y_test[i].ravel()[0])
 
         with open("results_metric_learning.csv", "a+") as results_file:
-            results_file.write(f"{file.split('-')[0]},lloc_knn,{N_NEIGHBORS},{(1 - errors/len(x_test)) * 100},{type}\n")
-
+            results_file.write(
+                f"{file.split('-')[0]},lloc_knn,{N_NEIGHBORS},{(1 - errors / len(x_test)) * 100},{t}\n")
 
     print("TESTING ORIGINAL DATASETS")
     for x, y, dataset_name in tqdm(load_datasets()):
@@ -61,4 +65,4 @@ if __name__ == '__main__':
             errors += int(ans[i] != y_test[i])
 
         with open("results_metric_learning.csv", "a+") as results_file:
-                results_file.write(f"{dataset_name},knn,{N_NEIGHBORS},{(1 - errors/len(x_test)) * 100},N/A\n")
+            results_file.write(f"{dataset_name},knn,{N_NEIGHBORS},{(1 - errors / len(x_test)) * 100},N/A\n")

@@ -26,10 +26,12 @@ TRAIN_TEST_SPLIT_RATE                  = 0.3
 GRAPH_NUM_NODES                        = 4000 # UNUSED
 ROE_SAMPLES                            = 300
 BAR_POSITION_OFFSET                    = 0
-SECOND_DIM                             = 0
+SECOND_DIM                             = True
 RECONSTRUCT_EMBEDDING                  = False
 METRIC_LEARNING                        = True
 USING                                  = "features"
+USE_CLUSTERS                           = False
+
 if environ.get("EPSILON"):
     EPSILON = float(environ.get("EPSILON"))
 
@@ -53,6 +55,16 @@ if environ.get("MNIST"):
 
 if environ.get("RANDOM"):
     USE_RANDOM = bool(int(environ.get("RANDOM")))
+
+if environ.get("CLUSTERS"):
+    USE_CLUSTERS = bool(int(environ.get("CLUSTERS")))
+
+if environ.get("DD_SQUARES"):
+    USE_DD_SQUARES = bool(int(environ.get("DD_SQUARES")))
+
+if environ.get("SINE"):
+    USE_SINE = bool(int(environ.get("SINE")))
+
 
 if environ.get("ADDITIVE_WEIGHTS"):
     USE_ADDITIVE_WEIGHTS = bool(int(environ.get("ADDITIVE_WEIGHTS")))
