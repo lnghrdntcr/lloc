@@ -182,13 +182,13 @@ def load_datasets():
     # x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
     # yield x_soybean, y_soybean, "soybean_real"
 
-    # Iris dataset
-    x_iris, y_iris = read_iris()
-    yield x_iris, y_iris, "iris"
-
-    # Wine dataset
-    x_wine, y_wine = read_wine()
-    yield x_wine, y_wine, "wine"
+    # # Iris dataset
+    # x_iris, y_iris = read_iris()
+    # yield x_iris, y_iris, "iris"
+    #
+    # # Wine dataset
+    # x_wine, y_wine = read_wine()
+    # yield x_wine, y_wine, "wine"
 
     # Ionosphere dataset
     x_ionosphere, y_ionosphere = read_ionosphere("./datasets/metric_learning/ionosphere/ionosphere.csv")
@@ -196,9 +196,9 @@ def load_datasets():
 
     if RUN_ALL_EXPERIMENTS:
         # Image segment dataset
-        x_is, y_is = read_image_segment(
-            "datasets/metric_learning/image_segment/segmentation.test")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
-        yield x_is, y_is, "image_segment"
+        # x_is, y_is = read_image_segment(
+        #     "datasets/metric_learning/image_segment/segmentation.test")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
+        # yield x_is, y_is, "image_segment"
 
         # Breast cancer dataset
         x_bc, y_bc = read_breast_cancer("./datasets/metric_learning/breast_cancer/breast-cancer-wisconsin.data")

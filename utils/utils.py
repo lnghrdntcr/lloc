@@ -156,12 +156,12 @@ def select_bucket_from_embedding_value(value, class_distr):
 
 def save_csv_results(epsilon, violated_constraints, total_number_constraints, algo_type,
                      constraint_type, missing_digits_probability, error_probability):
-    if not path.exists("../results/results.csv"):
-        with open("../results/results.csv", "w+") as file:
+    if not path.exists("../results/_old_results.csv"):
+        with open("../results/_old_results.csv", "w+") as file:
             file.write(
                 "epsilon, violated_constraints, total_number_constraints, max_number_constraints, algo_type, constraint_type, missing_digits_probability, error_probability\n")
 
-    with open("../results/results.csv", "a+") as file:
+    with open("../results/_old_results.csv", "a+") as file:
         file.write(
             f"{epsilon}, {violated_constraints}, {total_number_constraints}, {algo_type}, {constraint_type}, {missing_digits_probability}, {error_probability}\n")
 
@@ -187,30 +187,29 @@ def maps_to(embedding, number):
     return ret
 
 
-def merge_embeddings(new_best_embedding, tmp_best_violation_count, tmp_embedding, train_constraints):
+def merge_embeddings(new_best_embedding, base_error_count, base_embedding, constraints):
     for k, new_value in tqdm(new_best_embedding.items(), desc="Merging embeddings"):
-        next_embedding = tmp_embedding.copy()
-
+        # copy the base embedding
+        next_embedding = base_embedding.copy()
         try:
             v1, v2 = next_embedding[k]
         except KeyError:
+            # If for some reason the key doesn't exist, map it to the value that it has in the new embedding
             next_embedding[k] = (new_value, new_value)
             continue
 
-        # Skip the mapping if the element is mapped to zero or
-        # the element is mapped to the same as before
         if (v2 == new_value) or (v1 == 0):
             continue
 
+        sliced_constraints = [c for c in constraints if k in c]
         next_embedding[k] = (v1, new_value)
+        n_violated_constraints_before = count_raw_violated_constraints(base_embedding, sliced_constraints)
+        n_violated_constraints_after = count_raw_violated_constraints(next_embedding, sliced_constraints)
 
-        # Count of violated constraints of the new embedding
-        new_error_count = count_raw_violated_constraints(next_embedding, train_constraints)
+        if n_violated_constraints_after < n_violated_constraints_before:
+            base_embedding = next_embedding.copy()
 
-        if new_error_count < tmp_best_violation_count:
-            tmp_best_violation_count = new_error_count
-            tmp_embedding = next_embedding
-    return tmp_best_violation_count, tmp_embedding
+    return count_raw_violated_constraints(base_embedding, constraints), base_embedding
 
 
 def get_num_points(new_train_set):

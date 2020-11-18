@@ -207,7 +207,7 @@ def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE, spa
                             constraints.append([i, *next])
                         else:
                             constraints.append([i, *np.random.permutation(next)])
-        subsampled_constraints = subsample(constraints, 2 * ROE_SAMPLES ** 2 // 100)
+        subsampled_constraints = subsample(constraints, 3000)
 
         if sparsify:
             return sparsify_instance(subsampled_constraints)
@@ -223,21 +223,70 @@ def create_random_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE, spa
         return subsampled_constraints, ROE_SAMPLES
 
 
-def create_sine_dataset():
+def create_sine_dataset(contamination_percentage=CONTAMINATION_PERCENTAGE):
+    # if os.path.exists(f"./datasets/random/random-sin-{}")
+
+    subsampled_constraints = create_or_load(contamination_percentage, "sin",_create_sin)
+    return subsampled_constraints, ROE_SAMPLES
+
+
+def create_or_load(contamination_percentage, name, create_fn):
+    # Check if file exists
+    if os.path.exists(f"./datasets/random/random-{name}-{contamination_percentage}.txt"):
+        print("Using old dataset", file=sys.stderr)
+        with open(f"./datasets/random/random-{name}-{contamination_percentage}.txt") as random_ds:
+            constraints = []
+            for line in random_ds.readlines():
+                i, j, k = [int(x) for x in line.replace("\n", "").split(",")]
+                constraints.append([i, j, k])
+            return constraints
+    else:
+        # if not, check if base file exists
+        if os.path.exists(f"./datasets/random/random-{name}-0.0.txt"):
+            with open(f"./datasets/random/random-{name}-0.0.txt") as random_ds:
+                constraints = []
+                for line in random_ds.readlines():
+                    i, j, k = [int(x) for x in line.replace("\n", "").split(",")]
+
+                    if rand() >= contamination_percentage:
+                        constraints.append([i, j, k])
+                    else:
+                        constraints.append([i, k, j])
+
+                with open(f"./datasets/random/random-{name}-{contamination_percentage}.txt", "w+") as random_ds:
+                    for idx, constraint in enumerate(constraints):
+                        i, j, k = constraint
+                        if idx != len(constraints) - 1:
+                            random_ds.write(f"{i},{j},{k}\n")
+                        else:
+                            random_ds.write(f"{i},{j},{k}")
+                return constraints
+        else:
+            # create it
+            subsampled_constraints = create_fn(contamination_percentage)
+
+            with open(f"./datasets/random/random-{name}-{contamination_percentage}.txt", "w+") as random_ds:
+                for idx, constraint in enumerate(subsampled_constraints):
+                    i, j, k = constraint
+                    if idx != len(subsampled_constraints) - 1:
+                        random_ds.write(f"{i},{j},{k}\n")
+                    else:
+                        random_ds.write(f"{i},{j},{k}")
+
+            return subsampled_constraints
+
+
+def _create_sin(contamination_percentage):
     x = np.linspace(0, 1, ROE_SAMPLES)
     y = 3 * np.sin(20 * x) + np.random.rand(ROE_SAMPLES) * 2
     dataset = np.array([x, y])
-
     distance_matrix = np.zeros((len(dataset[0]), len(dataset[0])))
-    constraints = []
-    contamination_percentage = 0
     for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
         for j in range(len(distance_matrix)):
             distance_matrix[i, j] = np.linalg.norm(dataset[:, i] - dataset[:, j], ord=2)
-
-    constraints = format_triplets_from_distance(distance_matrix)
-
-    return constraints, ROE_SAMPLES
+    constraints = format_triplets_from_distance(distance_matrix, poison_perc=contamination_percentage)
+    subsampled_constraints = subsample(constraints, 3000)
+    return subsampled_constraints
 
 
 def format_triplets_from_distance(distance_matrix, poison_perc=CONTAMINATION_PERCENTAGE):
@@ -256,40 +305,56 @@ def format_triplets_from_distance(distance_matrix, poison_perc=CONTAMINATION_PER
                         constraints.append([i, j, k])
                     else:
                         constraints.append([i, k, j])
-        return constraints
+
+    return constraints
 
 
-def create_double_density_squares(outer_density=0.3):
+def create_double_density_squares(outer_density=0.3, contamination_perc=CONTAMINATION_PERCENTAGE):
     num_points_inner = int((1 - outer_density) * ROE_SAMPLES * 2)
     num_points_outer = int(outer_density * ROE_SAMPLES * 2)
-    points_outer = np.random.rand(num_points_outer, 2) * 2 - 1
-    points_inner = np.random.rand(num_points_inner, 2) - 0.5
-    dataset = np.concatenate((points_outer, points_inner))
     n_points = num_points_inner + num_points_outer
-    distance_matrix = np.zeros((n_points, n_points))
 
-    constraints = []
-    contamination_percentage = 0
-    for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
-        for j in range(len(distance_matrix)):
-            distance_matrix[i, j] = np.linalg.norm(dataset[i, :] - dataset[j, :], ord=2)
+    def _create_dd_squares(contamination_percentage):
+        num_points_inner = int((1 - outer_density) * ROE_SAMPLES * 2)
+        num_points_outer = int(outer_density * ROE_SAMPLES * 2)
+        points_outer = np.random.rand(num_points_outer, 2) * 2 - 1
+        points_inner = np.random.rand(num_points_inner, 2) - 0.5
+        dataset = np.concatenate((points_outer, points_inner))
+        n_points = num_points_inner + num_points_outer
+        distance_matrix = np.zeros((n_points, n_points))
 
-    constraints = format_triplets_from_distance(distance_matrix)
-    return constraints, ROE_SAMPLES * 2
+        constraints = []
+        contamination_percentage = 0
+        for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
+            for j in range(len(distance_matrix)):
+                distance_matrix[i, j] = np.linalg.norm(dataset[i, :] - dataset[j, :], ord=2)
+
+        constraints = format_triplets_from_distance(distance_matrix, poison_perc=contamination_percentage)
+        return subsample(constraints, 3000)
+
+    constraints = create_or_load(contamination_perc, "dd_sq", _create_dd_squares)
+
+    return constraints, n_points
 
 
-def create_n_density_squares(n_squares=3):
+def _create_n_density_squares(contamination_percentage):
     close_to_zero = np.random.rand(int(ROE_SAMPLES / 3), 2) / 4
     mid_from_zero = np.random.rand(int(ROE_SAMPLES / 3), 2) / 3 + 0.5
     far_from_zero = np.random.rand(int(ROE_SAMPLES / 3), 2) / 2 + 1
     dataset = np.concatenate((close_to_zero, mid_from_zero, far_from_zero))
     n_points = ROE_SAMPLES
     distance_matrix = np.zeros((n_points, n_points))
+
     for i in tqdm(range(len(distance_matrix)), desc="Distance Generation: ", leave=False):
         for j in range(len(distance_matrix)):
             distance_matrix[i, j] = np.linalg.norm(dataset[i, :] - dataset[j, :], ord=2)
 
-    constraints = format_triplets_from_distance(distance_matrix)
+    constraints = format_triplets_from_distance(distance_matrix, poison_perc=contamination_percentage)
+    subsampled_constraints = subsample(constraints, 3000)
+    return subsampled_constraints
+def create_n_density_squares(contamination_percentage=CONTAMINATION_PERCENTAGE):
+
+    constraints = create_or_load(contamination_percentage, "n_density", _create_n_density_squares)
 
     return constraints, ROE_SAMPLES
 
@@ -300,44 +365,53 @@ def format_mnist_from_distances(contamination_percentage=CONTAMINATION_PERCENTAG
     STOCHASTIC TRIPLET EMBEDDING -> https://lvdmaaten.github.io/ste/Stochastic_Triplet_Embedding_files/PID2449611.pdf
     :return:
     """
-    x_test, y_test, class_distribution = read_mnist(subsample=False)
+    def _gen_mnist(c_per):
+        constraints = []
 
-    constraints = []
+        if os.path.exists("mnist_saved_matrix.npy"):
+            distance_matrix = np.load("mnist_saved_matrix.npy")
+        else:
+            x_test, y_test, class_distribution = read_mnist(subsample=False)
 
-    # Subsample STE_NUM_DIGITS digits
-    subsample_idxs = subsample(range(len(list(x_test))), STE_NUM_DIGITS)
-    subsampled_x = [x_test[idx] for idx in subsample_idxs]
-    subsampled_labels = dict([(i, np.argmax(y_test[digit_idx])) for i, digit_idx in enumerate(subsample_idxs)])
+            # Subsample STE_NUM_DIGITS digits
+            subsample_idxs = subsample(range(len(list(x_test))), STE_NUM_DIGITS)
+            subsampled_x = [x_test[idx] for idx in subsample_idxs]
+            subsampled_labels = dict([(i, np.argmax(y_test[digit_idx])) for i, digit_idx in enumerate(subsample_idxs)])
 
-    # create distance matrix
-    distance_matrix = np.zeros((STE_NUM_DIGITS, STE_NUM_DIGITS))
+            # create distance matrix
+            distance_matrix = np.zeros((STE_NUM_DIGITS, STE_NUM_DIGITS))
 
-    for i in tqdm(range(len(subsampled_x)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1,
-                  leave=False):
-        for j in range(len(subsampled_x)):
-            distance_matrix[i, j] = np.linalg.norm(subsampled_x[i] - subsampled_x[j], ord=2)
+            for i in tqdm(range(len(subsampled_x)), desc="Distance Generation: ", position=BAR_POSITION_OFFSET + 1,
+                          leave=False):
+                for j in range(len(subsampled_x)):
+                    distance_matrix[i, j] = np.linalg.norm(subsampled_x[i] - subsampled_x[j], ord=2)
 
-    for i in tqdm(range(len(subsampled_x)), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2,
-                  leave=False):
+            np.save("mnist_saved_matrix", distance_matrix)
 
-        # Take 50 Nearest neighbours
-        indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
-        closest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1])][:50]
+        for i in tqdm(range(STE_NUM_DIGITS), desc="Triplet Generation : ", position=BAR_POSITION_OFFSET + 2,
+                      leave=False):
 
-        for close_index in closest_indices:
-            # take the 50 farthest neighbors
+            # Take 50 Nearest neighbours
             indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
-            farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
+            closest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1])][:50]
 
-            for far_index in farthest_indices:
-                if rand() >= contamination_percentage:
-                    constraints.append([i, close_index, far_index])
-                else:
-                    constraints.append([i, far_index, close_index])
+            for close_index in closest_indices:
+                # take the 50 farthest neighbors
+                indexed_digits = [(i, d) for i, d in enumerate(list(np.ravel(distance_matrix[i, :])))]
+                farthest_indices = [i for i, _ in sorted(indexed_digits, key=lambda x: x[1], reverse=True)][:50]
 
-    # Subsample again reduce the number of constraints constraints
-    subsampled_constraints = subsample(constraints, STE_NUM_DIGITS ** 2 // 10)
-    return subsampled_constraints, STE_NUM_DIGITS
+                for far_index in farthest_indices:
+                    if rand() >= c_per:
+                        constraints.append([i, close_index, far_index])
+                    else:
+                        constraints.append([i, far_index, close_index])
+
+        # Subsample again reduce the number of constraints constraints
+        subsampled_constraints = subsample(constraints, 3000)
+        return subsampled_constraints
+
+    constraints = create_or_load(contamination_percentage, "mnist", _gen_mnist)
+    return constraints, STE_NUM_DIGITS
 
 
 def format_mnist_from_labels(inclusion_probability=1, error_probability=0, use_distance=USE_DISTANCE):
@@ -442,7 +516,6 @@ def format_ml_dataset(x, y, using="features", dataset_name="None", subsample_fac
                 if j != i:
                     for k, el_3 in enumerate(y):
                         if k != i and j != k:
-
                             close = el_1 == el_2
                             distant = el_1 != el_3
                             if close and distant:

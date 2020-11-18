@@ -173,19 +173,14 @@ def format_embedding(base_point, representatives, mapped_to_representatives, mov
 
 def count_raw_violated_constraints(embedding, constraints, edge_weight_map=None):
     error_count = 0
-    for i, j, k in constraints:
+    for constraint in constraints:
+        i, j, k = constraint
         try:
             vector_f_i = np.array([embedding[i]])
             vector_f_j = np.array([embedding[j]])
             vector_f_k = np.array([embedding[k]])
 
             error_count += int(np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
-
-            if edge_weight_map is not None:
-                edge_weight_map[(i, j)] += int(
-                    np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
-                edge_weight_map[(i, k)] += int(
-                    np.linalg.norm(vector_f_i - vector_f_j) >= np.linalg.norm(vector_f_i - vector_f_k))
 
         except KeyError:
             error_count += 1
@@ -463,9 +458,12 @@ def create_wlcc(embedding, dataset, use_distance=USE_DISTANCE):
             acc = 0
             for c in constraint_combinations:
                 i, j = c
-                if embedding[i] >= embedding[j]:
+                try:
+                    if embedding[i] >= embedding[j]:
+                        acc += 1
+                except:
                     acc += 1
-
+                    continue
             weights.append(count * acc)
 
         else:

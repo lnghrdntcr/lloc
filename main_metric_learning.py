@@ -11,6 +11,7 @@ from format_datasets.format_dataset import create_random_dataset, format_mnist_f
 from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
 from utils.utils import format_arguments, \
     train_test_split, get_num_points, reduce_embedding, merge_embeddings
+import IPython
 
 import utils.read_dataset as rd
 
@@ -45,10 +46,8 @@ def create_dataset_from_embedding(embedding, dataset_labels, dataset_name, using
 
                 # map point from i-spacing * len(points_to_i) * 0.5 to i+spacing * len(points_to_i) * 0.5
                 new_points = [(k, i - 0.3 + idx * spacing * 0.6, v2) for idx, (k, v2) in enumerate(points_to_i)]
-
-            for k, (v1, v2) in tqdm(new_points, desc=f"[{dataset_name.upper()}] Writing new embedding"):
-                file.write(f"{k},{v1},{v2},{dataset_labels[k]}\n")
-
+                for k, v1, v2 in tqdm(new_points, desc=f"[{dataset_name.upper()}] Writing new embedding"):
+                    file.write(f"{k},{v1},{v2},{dataset_labels[k]}\n")
 
 
 def train(dataset_features, dataset_labels, dataset_name, using=USING):
@@ -67,10 +66,10 @@ def train(dataset_features, dataset_labels, dataset_name, using=USING):
     constraints = format_ml_dataset(dataset_features, dataset_labels, subsample_factor=0, using=using,
                                     dataset_name=dataset_name)
 
-    EPSILON = 1 / len(set(dataset_labels))
+    epsilon = 1 / len(set(dataset_labels))
 
     # Don't split in train and testing, learn with respect to all constraints
-    process_pool_arguments = format_arguments(constraints, num_points, cpu_count, EPSILON)
+    process_pool_arguments = format_arguments(constraints, num_points, cpu_count, epsilon)
     responses = process_pool.starmap(lloc, process_pool_arguments)
     # out = lloc(constraints, num_points, constraints, 0)
     best_embedding = reduce_embedding(best_embedding, min_cost, responses)
@@ -82,7 +81,7 @@ def train(dataset_features, dataset_labels, dataset_name, using=USING):
 
         new_num_points = get_num_points(new_train_set)
 
-        process_pool_args = format_arguments(new_train_set, new_num_points, cpu_count, EPSILON)
+        process_pool_args = format_arguments(new_train_set, new_num_points, cpu_count, epsilon)
         responses = process_pool.starmap(lloc, process_pool_args)
         new_best_embedding = reduce_embedding(OrderedDict(), float("inf"), responses)
 
