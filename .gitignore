@@ -8,3 +8,4 @@ images/
 *.png
 *.csv
 *.txt
+vendor/*

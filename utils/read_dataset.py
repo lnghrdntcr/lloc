@@ -8,7 +8,7 @@ from scipy.io import loadmat
 
 import IPython
 import os
-RUN_ALL_EXPERIMENTS = True
+RUN_ALL_EXPERIMENTS = False
 
 def readInt32(num):
     return unpack(">I", num)[0]
@@ -174,35 +174,36 @@ def load_poisoned():
 def load_datasets():
 
     #Synthetic dataset
-    # x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
-    #                                       "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
-    # yield x_synth, y_synth, "synthetic"
+    x_synth, y_synth = read_synth("./datasets/metric_learning/poisoned_synthetic/xt_lm.mat",
+                                          "./datasets/metric_learning/poisoned_synthetic/y_lm.mat")
+    yield x_synth, y_synth, "synthetic"
 
-    # # Soybean dataset
-    # x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
-    # yield x_soybean, y_soybean, "soybean_real"
+    # Soybean dataset
+    x_soybean, y_soybean = read_soybean("./datasets/metric_learning/soybean/soybean-large.csv")
+    yield x_soybean, y_soybean, "soybean_real"
 
-    # # Iris dataset
-    # x_iris, y_iris = read_iris()
-    # yield x_iris, y_iris, "iris"
-    #
-    # # Wine dataset
-    # x_wine, y_wine = read_wine()
-    # yield x_wine, y_wine, "wine"
+    # Iris dataset
+    x_iris, y_iris = read_iris()
+    yield x_iris, y_iris, "iris"
+
+    # Wine dataset
+    x_wine, y_wine = read_wine()
+    yield x_wine, y_wine, "wine"
 
     # Ionosphere dataset
     x_ionosphere, y_ionosphere = read_ionosphere("./datasets/metric_learning/ionosphere/ionosphere.csv")
     yield x_ionosphere, y_ionosphere, "ionosphere"
 
-    if RUN_ALL_EXPERIMENTS:
-        # Image segment dataset
-        # x_is, y_is = read_image_segment(
-        #     "datasets/metric_learning/image_segment/segmentation.test")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
-        # yield x_is, y_is, "image_segment"
+    # Breast cancer dataset
+    x_bc, y_bc = read_breast_cancer("./datasets/metric_learning/breast_cancer/breast-cancer-wisconsin.data")
+    yield x_bc, y_bc, "breast_cancer"
 
-        # Breast cancer dataset
-        x_bc, y_bc = read_breast_cancer("./datasets/metric_learning/breast_cancer/breast-cancer-wisconsin.data")
-        yield x_bc, y_bc, "breast_cancer"
+    if RUN_ALL_EXPERIMENTS:
+
+        # Image segment dataset
+        x_is, y_is = read_image_segment(
+            "datasets/metric_learning/image_segment/segmentation.test")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
+        yield x_is, y_is, "image_segment"
 
         # Vehicle dataset
         x_vehicle, y_vehicle = read_vehicle("./datasets/metric_learning/vehicle/xa.csv")
@@ -210,13 +211,13 @@ def load_datasets():
 
         # German Credit dataset
         x_gc, y_gc = read_german_credit(
-            "./datasets/metric_learning/german_credit/german_credit.tsv")  # pd.read_csv("./datasets/german_credit/german_credit.tsv", sep="\t")
+            "./datasets/metric_learning/german_credit/german_credit.tsv")
         yield x_gc, y_gc, "german_credit"
 
-        # # Isolet dataset
-        # x_isolet, y_isolet = read_isolet("./datasets/metric_learning/isolet/isolet_csv.csv")
-        # yield x_isolet, y_isolet, "isolet"
-        #
-        # # Letters dataset
-        # x_letters, y_letters = read_letters("./datasets/metric_learning/letters/letters.csv")
-        # yield x_letters, y_letters, "letters"
+        # Isolet dataset
+        x_isolet, y_isolet = read_isolet("./datasets/metric_learning/isolet/isolet_csv.csv")
+        yield x_isolet, y_isolet, "isolet"
+
+        # Letters dataset
+        x_letters, y_letters = read_letters("./datasets/metric_learning/letters/letters.csv")
+        yield x_letters, y_letters, "letters"

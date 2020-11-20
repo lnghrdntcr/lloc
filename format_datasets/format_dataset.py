@@ -521,4 +521,9 @@ def format_ml_dataset(x, y, using="features", dataset_name="None", subsample_fac
                             if close and distant:
                                 constraints.append([i, j, k])
 
+        try:
+            constraints = subsample(constraints, len(y) * 70 * 70)
+        except:
+            pass
+
     return constraints

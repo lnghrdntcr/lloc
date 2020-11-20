@@ -2,18 +2,14 @@ import multiprocessing
 import sys
 from collections import OrderedDict
 from multiprocessing import Pool
+
 from tqdm import tqdm
 
-from utils.config import USING, USE_MULTIPROCESS, CONTAMINATION_PERCENTAGE, USE_MNIST, USE_RANDOM, \
-    EPSILON, TRAIN_TEST_SPLIT_RATE, USE_SINE, USE_DD_SQUARES, SECOND_DIM
-from format_datasets.format_dataset import create_random_dataset, format_mnist_from_distances, create_sine_dataset, \
-    create_double_density_squares, format_ml_dataset
-from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints, predict
-from utils.utils import format_arguments, \
-    train_test_split, get_num_points, reduce_embedding, merge_embeddings
-import IPython
-
 import utils.read_dataset as rd
+from format_datasets.format_dataset import format_ml_dataset
+from lloc import lloc, create_nd_embedding, get_violated_constraints, count_raw_violated_constraints
+from utils.config import USING, USE_MULTIPROCESS, EPSILON, SECOND_DIM
+from utils.utils import format_arguments, get_num_points, reduce_embedding, merge_embeddings
 
 
 def create_dataset_from_embedding(embedding, dataset_labels, dataset_name, using="features", n_dims=1):
@@ -100,12 +96,14 @@ def train(dataset_features, dataset_labels, dataset_name, using=USING):
 
 
 if __name__ == "__main__":
-    for x, y, dataset_name in rd.load_datasets():
-        for using in ["labels", "features"]:
-            print(f"[{using.upper()}]Doing {dataset_name}")
-            train(x, y, dataset_name, using=using)
-
+#   for x, y, dataset_name in rd.load_datasets():
+#       for using in ["labels", "features"]:
+#           print(f"[{using.upper()}]Doing {dataset_name}")
+#           train(x, y, dataset_name, using=using)
+#
     for x, y, dataset_name in rd.load_poisoned():
+        if "breast_cancer" not in dataset_name:
+            continue
         for using in ["labels", "features"]:
             print(f"[{using.upper()}]Doing {dataset_name}")
             train(x, y, dataset_name, using=using)
