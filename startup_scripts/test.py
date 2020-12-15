@@ -11,11 +11,11 @@ from utils.read_dataset import load_datasets, load_poisoned
 
 if __name__ == '__main__':
 
-    base_dir = "datasets/lloc_output/"
+    base_dir = "../datasets/lloc_output/"
     N_NEIGHBORS = 5
     print("TESTING LLOC DATASETS")
 
-    with open("results_metric_learning.csv", "w+") as file:
+    with open("../old_results/results_metric_learning.csv", "w+") as file:
         file.write(f"dataset,algorithm,n_neighbors,accuracy(%),type,dimensions\n")
 
     for file in sorted(os.listdir(base_dir)):
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             # print(f"{ans[i]} vs {y_test[i].ravel()[0]}")
             errors += int(ans[i] != y_test[i].ravel()[0])
 
-        with open("results_metric_learning.csv", "a+") as results_file:
+        with open("../old_results/results_metric_learning.csv", "a+") as results_file:
             results_file.write(
                 f"{file.split('-')[0]},lloc_knn,{N_NEIGHBORS},{(1 - errors / len(x_test)) * 100},{t},{dimensions}\n")
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
             # print(f"{ans[i]} vs {y_test[i].ravel()[0]}")
             errors += int(ans[i] != y_test[i])
 
-        with open("results_metric_learning.csv", "a+") as results_file:
+        with open("../old_results/results_metric_learning.csv", "a+") as results_file:
             results_file.write(f"{dataset_name},knn,{N_NEIGHBORS},{(1 - errors / len(x_test)) * 100},NA,NA\n")
 
     for x, y, dataset_name in tqdm(load_poisoned()):
@@ -86,6 +86,6 @@ if __name__ == '__main__':
             # print(f"{ans[i]} vs {y_test[i].ravel()[0]}")
             errors += int(ans[i] != y_test[i])
 
-        with open("results_metric_learning.csv", "a+") as results_file:
+        with open("../old_results/results_metric_learning.csv", "a+") as results_file:
             results_file.write(f"{dataset_name},knn,{N_NEIGHBORS},{(1 - errors / len(x_test)) * 100},NA,NA\n")
 
