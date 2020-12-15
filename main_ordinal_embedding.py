@@ -11,7 +11,6 @@ from utils.config import USE_MULTIPROCESS, CONTAMINATION_PERCENTAGE, USE_MNIST, 
 from utils.utils import format_arguments, \
     train_test_split, get_num_points, reduce_embedding, merge_embeddings
 
-
 def main(dataset_name):
     best_embedding = OrderedDict()
     min_cost = float("inf")
