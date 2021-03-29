@@ -14,7 +14,7 @@ pickleshare==0.7.5
 Pillow~=7.1.2
 prompt-toolkit==3.0.4
 ptyprocess==0.6.0
-Pygments==2.6.1
+Pygments==2.7.4
 requests==2.23.0
 six==1.14.0
 tqdm~=4.46.0
